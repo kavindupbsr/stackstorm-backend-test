@@ -63,3 +63,21 @@ Content-Type: application/json
   "email": "admin@dickwellafashion.lk",
   "password": "Password123!"
 }
+
+###
+
+### 9. Update Product & Evict Redis Cache (Admin Only - STORM-022)
+PUT http://localhost:5000/api/v1/products/b0000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer <PASTE_ADMIN_ACCESS_TOKEN_HERE>
+
+{
+  "title": "Classic Batik Short Sleeve Shirt (Handmade Edition)"
+}
+
+###
+
+### 10. Fetch Updated Product (Re-primes Cache with Fresh Data)
+GET http://localhost:5000/api/v1/products/classic-batik-short-sleeve-shirt
+Accept: application/json
+
