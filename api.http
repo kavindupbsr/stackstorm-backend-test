@@ -81,3 +81,34 @@ Authorization: Bearer <PASTE_ADMIN_ACCESS_TOKEN_HERE>
 GET http://localhost:5000/api/v1/products/classic-batik-short-sleeve-shirt
 Accept: application/json
 
+###
+
+### 11. Add Item to Cart (Guest or Authenticated - STORM-023)
+POST http://localhost:5000/api/v1/cart
+Content-Type: application/json
+X-Session-ID: guest_sample_sess_001
+
+{
+  "variant_id": "d0000000-0000-0000-0000-000000000001",
+  "quantity": 2
+}
+
+###
+
+### 12. Get Active Shopping Cart (STORM-023)
+GET http://localhost:5000/api/v1/cart
+X-Session-ID: guest_sample_sess_001
+Accept: application/json
+
+###
+
+### 13. Merge Guest Cart into Customer Account (STORM-023)
+POST http://localhost:5000/api/v1/cart/merge
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+{
+  "guest_session_id": "guest_sample_sess_001"
+}
+
+
