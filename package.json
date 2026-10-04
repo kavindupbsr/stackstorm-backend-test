@@ -1,0 +1,24 @@
+{
+  "name": "stackstorm-backend",
+  "version": "1.0.0",
+  "description": "StackStorm Backend REST API Service for Dickwella Fashion Corner",
+  "main": "src/server.js",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/unit/"
+  },
+  "keywords": [
+    "stackstorm",
+    "ecommerce",
+    "dickwella-fashion-corner",
+    "express",
+    "postgresql",
+    "redis"
+  ],
+  "author": "StackStorm Engineering Team (Amarawickrama R.H., S. Thanoogithan, B.K. Pabasara, Lakshani A.T.)",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  }
+}
