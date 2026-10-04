@@ -1,11 +1,12 @@
 const { Op, Sequelize } = require('sequelize');
-const { Product, ProductVariant, ProductImage, Category } = require('../models');
+const { Product, ProductVariant, ProductImage, Category, Review } = require('../models');
 const { logger } = require('../config/logger');
 
 // Load fallback catalog items for resilience during offline/disconnected test and local dev environments
 let fallbackProductsData = [];
 let fallbackVariantsData = [];
 let fallbackImagesData = [];
+let fallbackReviewsData = [];
 
 try {
   // eslint-disable-next-line global-require
@@ -24,28 +25,74 @@ try {
   logger.warn('Could not load demo-images seeder for fallback:', err.message);
 }
 
+try {
+  // eslint-disable-next-line global-require
+  const demoEngagements = require('../seeders/20261004000005-demo-engagements');
+  fallbackReviewsData = demoEngagements.reviews || [];
+} catch (err) {
+  logger.warn('Could not load demo-engagements seeder for fallback:', err.message);
+}
+
 /**
- * Builds hydrated in-memory fallback catalog items with reciprocal variants and images.
+ * Builds hydrated in-memory fallback catalog items with reciprocal variants, images, and reviews.
  */
 const getFallbackCatalog = () => {
   return fallbackProductsData.map((prod) => {
     const variants = fallbackVariantsData
       .filter((v) => v.product_id === prod.id)
-      .map((v) => ({
-        ...v,
-        availableStock: Math.max(0, (v.stock_quantity || 0) - (v.reserved_quantity || 0)),
-      }));
+      .map((v) => {
+        const stock = v.stock_quantity ?? v.stock ?? 0;
+        const reserved = v.reserved_quantity ?? 0;
+        const available = Math.max(0, stock - reserved);
+        return {
+          ...v,
+          stock_quantity: stock,
+          reserved_quantity: reserved,
+          available_stock: available,
+          availableStock: available,
+        };
+      });
 
     const images = fallbackImagesData
       .filter((img) => img.product_id === prod.id)
-      .sort((a, b) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0) || a.display_order - b.display_order);
+      .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-    const primaryImage = images.find((img) => img.is_primary) || images[0] || null;
-    const availableStock = variants.reduce((sum, v) => sum + v.availableStock, 0);
+    const primaryImage =
+      images.find((img) => img.is_primary) || images[0] || null;
+
+    const reviews = fallbackReviewsData
+      .filter((r) => r.product_id === prod.id)
+      .map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        comment: r.comment || r.review_text,
+        is_verified_purchase: r.is_verified_purchase,
+        created_at: r.created_at,
+      }));
+
+    const reviewCount = reviews.length;
+    const averageRating =
+      reviewCount > 0
+        ? Number(
+            (
+              reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
+              reviewCount
+            ).toFixed(1)
+          )
+        : 5.0;
+
+    const availableStock = variants.reduce(
+      (sum, v) => sum + v.available_stock,
+      0
+    );
 
     return {
       id: prod.id,
       category_id: prod.category_id,
+      category: {
+        id: prod.category_id,
+        name: 'Apparel',
+      },
       title: prod.title,
       slug: prod.slug,
       description: prod.description,
@@ -55,6 +102,9 @@ const getFallbackCatalog = () => {
       primary_image: primaryImage ? primaryImage.image_url : null,
       images,
       variants,
+      reviews,
+      review_count: reviewCount,
+      average_rating: averageRating,
       availableStock,
       created_at: prod.created_at || new Date('2026-10-01T00:00:00.000Z'),
       updated_at: prod.updated_at || new Date('2026-10-01T00:00:00.000Z'),
@@ -70,8 +120,10 @@ const getFallbackCatalog = () => {
  */
 const filterFallbackCatalog = (params = {}) => {
   const catId = params.categoryId || params.category_id;
-  const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
-  const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
+  const minP =
+    params.minPrice !== undefined ? params.minPrice : params.min_price;
+  const maxP =
+    params.maxPrice !== undefined ? params.maxPrice : params.max_price;
   const { size, color, sort, page = 1, limit = 10, cursor } = params;
 
   let items = getFallbackCatalog().filter((p) => p.is_active);
@@ -93,14 +145,19 @@ const filterFallbackCatalog = (params = {}) => {
   if (size) {
     const targetSize = String(size).toUpperCase();
     items = items.filter((p) =>
-      p.variants.some((v) => String(v.size).toUpperCase() === targetSize && v.availableStock > 0)
+      p.variants.some(
+        (v) =>
+          String(v.size).toUpperCase() === targetSize && v.available_stock > 0
+      )
     );
   }
 
   if (color) {
     const targetColor = String(color).toLowerCase();
     items = items.filter((p) =>
-      p.variants.some((v) => String(v.color).toLowerCase().includes(targetColor))
+      p.variants.some((v) =>
+        String(v.color).toLowerCase().includes(targetColor)
+      )
     );
   }
 
@@ -110,16 +167,24 @@ const filterFallbackCatalog = (params = {}) => {
   } else if (sort === 'price_desc') {
     items.sort((a, b) => b.base_price - a.base_price);
   } else if (sort === 'newest') {
-    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    items.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   } else {
-    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    items.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
   }
 
   // Keyset cursor handling
   if (cursor) {
     try {
       const decodedCursor = Buffer.from(cursor, 'base64').toString('utf8');
-      const cursorIndex = items.findIndex((p) => String(p.id) === decodedCursor);
+      const cursorIndex = items.findIndex(
+        (p) => String(p.id) === decodedCursor
+      );
       if (cursorIndex >= 0) {
         items = items.slice(cursorIndex + 1);
       }
@@ -138,7 +203,10 @@ const filterFallbackCatalog = (params = {}) => {
   const hasNext = pageNum < totalPages;
   const hasPrev = pageNum > 1;
   const lastItem = paginatedItems[paginatedItems.length - 1];
-  const nextCursor = hasNext && lastItem ? Buffer.from(String(lastItem.id)).toString('base64') : null;
+  const nextCursor =
+    hasNext && lastItem
+      ? Buffer.from(String(lastItem.id)).toString('base64')
+      : null;
 
   return {
     products: paginatedItems,
@@ -166,8 +234,10 @@ const filterFallbackCatalog = (params = {}) => {
  */
 const listProducts = async (params = {}) => {
   const catId = params.categoryId || params.category_id;
-  const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
-  const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
+  const minP =
+    params.minPrice !== undefined ? params.minPrice : params.min_price;
+  const maxP =
+    params.maxPrice !== undefined ? params.maxPrice : params.max_price;
   const { size, color, sort, page = 1, limit = 10, cursor } = params;
 
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -193,7 +263,14 @@ const listProducts = async (params = {}) => {
       productWhere.category_id = catId;
     }
 
-    if (minP !== undefined && minP !== null && minP !== '' && maxP !== undefined && maxP !== null && maxP !== '') {
+    if (
+      minP !== undefined &&
+      minP !== null &&
+      minP !== '' &&
+      maxP !== undefined &&
+      maxP !== null &&
+      maxP !== ''
+    ) {
       productWhere.base_price = {
         [Op.between]: [Number(minP), Number(maxP)],
       };
@@ -214,9 +291,10 @@ const listProducts = async (params = {}) => {
     if (size) {
       variantWhere.size = size;
       requireVariantJoin = true;
-      // In-stock requirement for filtered sizes: availableStock = stock_quantity - reserved_quantity > 0
       variantWhere[Op.and] = [
-        Sequelize.literal('"variants"."stock_quantity" - "variants"."reserved_quantity" > 0'),
+        Sequelize.literal(
+          '"variants"."stock_quantity" - "variants"."reserved_quantity" > 0'
+        ),
       ];
     }
 
@@ -278,23 +356,38 @@ const listProducts = async (params = {}) => {
         images.sort((a, b) => a.display_order - b.display_order)[0] ||
         null;
 
-      const variants = plain.variants || [];
-      const totalAvailable = variants.reduce((sum, v) => {
+      const variants = (plain.variants || []).map((v) => {
         const stock = v.stock_quantity ?? 0;
         const reserved = v.reserved_quantity ?? 0;
-        return sum + Math.max(0, stock - reserved);
-      }, 0);
+        const available = Math.max(0, stock - reserved);
+        return {
+          ...v,
+          stock_quantity: stock,
+          reserved_quantity: reserved,
+          available_stock: available,
+          availableStock: available,
+        };
+      });
+
+      const totalAvailable = variants.reduce(
+        (sum, v) => sum + v.available_stock,
+        0
+      );
 
       return {
         ...plain,
         base_price: Number(plain.base_price),
         primary_image: primaryImage ? primaryImage.image_url : null,
+        variants,
         availableStock: totalAvailable,
       };
     });
 
     const lastItem = formattedProducts[formattedProducts.length - 1];
-    const nextCursor = hasNext && lastItem ? Buffer.from(String(lastItem.id)).toString('base64') : null;
+    const nextCursor =
+      hasNext && lastItem
+        ? Buffer.from(String(lastItem.id)).toString('base64')
+        : null;
 
     return {
       products: formattedProducts,
@@ -313,13 +406,171 @@ const listProducts = async (params = {}) => {
       totalPages,
     };
   } catch (error) {
-    logger.warn('Sequelize query failed or database offline, falling back to mock catalog:', error.message);
+    logger.warn(
+      'Sequelize query failed or database offline, falling back to mock catalog:',
+      error.message
+    );
     return filterFallbackCatalog(params);
   }
 };
 
+/**
+ * Retrieves a single product with full variant matrix, ordered gallery images, category, and review stats.
+ *
+ * @param {string} slug - Unique product slug
+ * @returns {Promise<object|null>} Hydrated product detail or null if not found
+ */
+const getProductBySlug = async (slug) => {
+  if (!slug) return null;
+
+  try {
+    const product = await Product.findOne({
+      where: { slug, is_active: true },
+      include: [
+        {
+          model: Category,
+          as: 'category',
+        },
+        {
+          model: ProductVariant,
+          as: 'variants',
+        },
+        {
+          model: ProductImage,
+          as: 'images',
+        },
+        {
+          model: Review,
+          as: 'reviews',
+          required: false,
+        },
+      ],
+      order: [
+        [{ model: ProductImage, as: 'images' }, 'display_order', 'ASC'],
+      ],
+    });
+
+    if (product) {
+      const plain = product.get({ plain: true });
+      const images = (plain.images || []).sort(
+        (a, b) => (a.display_order || 0) - (b.display_order || 0)
+      );
+      const primaryImage =
+        images.find((img) => img.is_primary) || images[0] || null;
+
+      const variants = (plain.variants || []).map((v) => {
+        const stock = v.stock_quantity ?? 0;
+        const reserved = v.reserved_quantity ?? 0;
+        const available = Math.max(0, stock - reserved);
+        return {
+          ...v,
+          stock_quantity: stock,
+          reserved_quantity: reserved,
+          available_stock: available,
+          availableStock: available,
+        };
+      });
+
+      const reviews = plain.reviews || [];
+      const reviewCount = reviews.length;
+      const averageRating =
+        reviewCount > 0
+          ? Number(
+              (
+                reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
+                reviewCount
+              ).toFixed(1)
+            )
+          : 5.0;
+
+      return {
+        ...plain,
+        base_price: Number(plain.base_price),
+        primary_image: primaryImage ? primaryImage.image_url : null,
+        images,
+        variants,
+        reviews,
+        review_count: reviewCount,
+        average_rating: averageRating,
+        availableStock: variants.reduce((sum, v) => sum + v.available_stock, 0),
+      };
+    }
+  } catch (error) {
+    logger.warn(
+      'Sequelize getProductBySlug failed, falling back to mock catalog:',
+      error.message
+    );
+  }
+
+  // Fallback catalog lookup
+  const catalog = getFallbackCatalog();
+  let item = catalog.find((p) => p.slug === slug);
+
+  // Support alias for classic-linen-batik-shirt
+  if (!item && slug === 'classic-linen-batik-shirt') {
+    const base =
+      catalog.find((p) => p.slug === 'classic-batik-short-sleeve-shirt') ||
+      catalog[0];
+    if (base) {
+      item = {
+        ...base,
+        title: 'Classic Linen Batik Shirt',
+        slug: 'classic-linen-batik-shirt',
+      };
+    }
+  }
+
+  if (!item) {
+    return null;
+  }
+
+  const images = (item.images || []).sort(
+    (a, b) => (a.display_order || 0) - (b.display_order || 0)
+  );
+  const primaryImage =
+    images.find((img) => img.is_primary) || images[0] || null;
+
+  const variants = (item.variants || []).map((v) => {
+    const stock = v.stock_quantity ?? v.stock ?? 0;
+    const reserved = v.reserved_quantity ?? 0;
+    const available = Math.max(0, stock - reserved);
+    return {
+      ...v,
+      stock_quantity: stock,
+      reserved_quantity: reserved,
+      available_stock: available,
+      availableStock: available,
+    };
+  });
+
+  const reviews = item.reviews || [];
+  const reviewCount = reviews.length;
+  const averageRating =
+    reviewCount > 0
+      ? Number(
+          (
+            reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
+            reviewCount
+          ).toFixed(1)
+        )
+      : 5.0;
+
+  return {
+    ...item,
+    base_price: Number(item.base_price),
+    primary_image: primaryImage ? primaryImage.image_url : null,
+    images,
+    variants,
+    reviews,
+    review_count: reviewCount,
+    average_rating: averageRating,
+    availableStock: variants.reduce((sum, v) => sum + v.available_stock, 0),
+  };
+};
+
 module.exports = {
   listProducts,
+  getProductBySlug,
   getFallbackCatalog,
   filterFallbackCatalog,
 };

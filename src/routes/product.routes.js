@@ -10,4 +10,11 @@ const router = express.Router();
  */
 router.get('/', productController.getProducts);
 
+/**
+ * @route   GET /api/v1/products/:slug
+ * @desc    Retrieve single product detail with variant matrix and gallery images
+ * @access  Public
+ */
+router.get('/:slug', productController.getProductBySlug);
+
 module.exports = router;
