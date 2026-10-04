@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const Stripe = require('stripe');
-const { Order, Payment, sequelize } = require('../models');
+const { Order, Payment } = require('../models');
 const reservationService = require('./reservation.service');
+const orderService = require('./order.service');
 const { logger } = require('../config/logger');
 const ApiError = require('../utils/ApiError');
 
@@ -172,46 +173,10 @@ const handleWebhookEvent = async (event) => {
     }
 
     try {
-      await sequelize.transaction(async (t) => {
-        // 1. Update Order status to paid and processing
-        const order = await Order.findByPk(orderId, { transaction: t });
-        if (order) {
-          await order.update(
-            {
-              payment_status: 'paid',
-              order_status: 'processing',
-            },
-            { transaction: t }
-          );
-        }
+      // Delegate order finalization, stock deduction, and email dispatch to orderService
+      const finalizeResult = await orderService.finalizeOrder(orderId, paymentIntent);
 
-        // 2. Idempotently record successful Payment record
-        const [paymentRecord, created] = await Payment.findOrCreate({
-          where: { payment_intent_id: piId },
-          defaults: {
-            order_id: orderId,
-            payment_method: 'stripe',
-            payment_intent_id: piId,
-            amount: paymentIntent.amount ? Number((paymentIntent.amount / 100).toFixed(2)) : 0,
-            currency: String(paymentIntent.currency || 'lkr').toUpperCase(),
-            status: 'succeeded',
-            raw_response: paymentIntent,
-          },
-          transaction: t,
-        });
-
-        if (!created && paymentRecord) {
-          await paymentRecord.update(
-            {
-              status: 'succeeded',
-              raw_response: paymentIntent,
-            },
-            { transaction: t }
-          );
-        }
-      });
-
-      // 3. Confirm temporary stock reservation if associated
+      // Confirm temporary stock reservation if associated
       try {
         await reservationService.confirmReservation(orderId);
       } catch (err) {
@@ -219,7 +184,12 @@ const handleWebhookEvent = async (event) => {
       }
 
       logger.info(`[Stripe Webhook] Order ${orderId} successfully marked as PAID via ${piId}`);
-      return { success: true, order_id: orderId, status: 'paid' };
+      return {
+        success: true,
+        order_id: orderId,
+        status: 'paid',
+        invoice_number: finalizeResult.invoice_number,
+      };
     } catch (err) {
       logger.error(
         `Database error handling payment_intent.succeeded for order ${orderId}:`,
