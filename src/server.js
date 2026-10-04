@@ -3,6 +3,14 @@ const http = require('http');
 const app = require('./app');
 const { logger } = require('./config/logger');
 const { sequelize, connectWithRetry } = require('./models');
+const {
+  startReservationExpiryJob,
+  stopReservationExpiryJob,
+} = require('./jobs/reservationExpiry.job');
+const {
+  startCancelUnpaidOrdersJob,
+  stopCancelUnpaidOrdersJob,
+} = require('./jobs/cancelUnpaidOrders.job');
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
@@ -17,6 +25,8 @@ if (process.env.NODE_ENV !== 'test') {
 
     try {
       await connectWithRetry();
+      startReservationExpiryJob();
+      startCancelUnpaidOrdersJob();
     } catch (err) {
       logger.error('[DATABASE] Critical: Failed to establish initial database connection', {
         error: err.message,
@@ -28,6 +38,8 @@ if (process.env.NODE_ENV !== 'test') {
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
+  stopReservationExpiryJob();
+  stopCancelUnpaidOrdersJob();
   server.close(async (err) => {
     if (err) {
       logger.error('Error during server close:', { error: err });
