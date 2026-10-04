@@ -2,6 +2,7 @@ const express = require('express');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const { ROLES } = require('../config/constants');
+const analyticsController = require('../controllers/analytics.controller');
 const { successResponse } = require('../utils/responseFormatter');
 
 const router = express.Router();
@@ -11,6 +12,34 @@ router.use(authenticate);
 
 // Enforce admin-only access on administrative routes
 router.use(authorize(ROLES.ADMIN));
+
+/**
+ * @route GET /api/v1/admin/analytics/overview
+ * @desc Get real-time business performance overview (Revenue, Orders, Active Customers, Low Stock)
+ * @access Private (Admin only)
+ */
+router.get('/analytics/overview', analyticsController.getOverview);
+
+/**
+ * @route GET /api/v1/admin/analytics/sales-trend
+ * @desc Get daily sales trend aggregations for charting
+ * @access Private (Admin only)
+ */
+router.get('/analytics/sales-trend', analyticsController.getSalesTrend);
+
+/**
+ * @route GET /api/v1/admin/analytics/top-products
+ * @desc Get top-selling garments by sales volume and revenue
+ * @access Private (Admin only)
+ */
+router.get('/analytics/top-products', analyticsController.getTopProducts);
+
+/**
+ * @route GET /api/v1/admin/analytics/low-stock
+ * @desc Get low stock variant alerts requiring restocking
+ * @access Private (Admin only)
+ */
+router.get('/analytics/low-stock', analyticsController.getLowStock);
 
 /**
  * @route GET /api/v1/admin/metrics
