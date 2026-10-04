@@ -1,0 +1,58 @@
+const { Sequelize } = require('sequelize');
+const dbConfigs = require('../config/database');
+const { logger } = require('../config/logger');
+
+const env = process.env.NODE_ENV || 'development';
+const config = dbConfigs[env] || dbConfigs.development;
+
+const sequelize = new Sequelize(config.database, config.username, config.password, config);
+
+/**
+ * Connect to PostgreSQL with exponential backoff retry strategy.
+ *
+ * @param {number} [maxRetries=5] - Maximum retry attempts
+ * @param {number} [initialDelay=1000] - Initial delay in ms
+ * @returns {Promise<boolean>}
+ */
+const connectWithRetry = async (maxRetries = 5, initialDelay = 1000) => {
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await sequelize.authenticate();
+      logger.info('[DATABASE] PostgreSQL 17 connection pool established successfully');
+      return true;
+    } catch (error) {
+      attempt += 1;
+      const delay = initialDelay * 2 ** (attempt - 1);
+      logger.warn(
+        `[DATABASE] Connection attempt ${attempt}/${maxRetries} failed: ${error.message}. Retrying in ${delay}ms...`
+      );
+
+      if (attempt >= maxRetries) {
+        logger.error(
+          '[DATABASE] Maximum connection retries exceeded. Database connection failed.',
+          {
+            error: error.message,
+            stack: error.stack,
+          }
+        );
+        throw error;
+      }
+
+      // eslint-disable-next-line no-await-in-loop, no-promise-executor-return
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  return false;
+};
+
+const db = {
+  sequelize,
+  Sequelize,
+  connectWithRetry,
+};
+
+module.exports = db;

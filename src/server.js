@@ -2,28 +2,45 @@ require('dotenv').config();
 const http = require('http');
 const app = require('./app');
 const { logger } = require('./config/logger');
+const { sequelize, connectWithRetry } = require('./models');
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-// Start HTTP server listener
+// Start HTTP server listener and connect to database
 if (process.env.NODE_ENV !== 'test') {
-  server.listen(PORT, () => {
+  server.listen(PORT, async () => {
     logger.info(
       `Server listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`
     );
     logger.info(`Healthcheck probe available at http://localhost:${PORT}/api/v1/health`);
+
+    try {
+      await connectWithRetry();
+    } catch (err) {
+      logger.error('[DATABASE] Critical: Failed to establish initial database connection', {
+        error: err.message,
+      });
+    }
   });
 }
 
 // Graceful shutdown handling
 const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
-  server.close((err) => {
+  server.close(async (err) => {
     if (err) {
       logger.error('Error during server close:', { error: err });
       process.exit(1);
     }
+
+    try {
+      await sequelize.close();
+      logger.info('[DATABASE] Sequelize connection pool closed gracefully.');
+    } catch (dbErr) {
+      logger.error('Error closing database pool:', { error: dbErr.message });
+    }
+
     logger.info('HTTP server closed gracefully.');
     process.exit(0);
   });
