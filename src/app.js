@@ -14,6 +14,7 @@ const cartRoutes = require('./routes/cart.routes');
 const checkoutRoutes = require('./routes/checkout.routes');
 const wishlistRoutes = require('./routes/wishlist.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const orderRoutes = require('./routes/order.routes');
 const { successResponse } = require('./utils/responseFormatter');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
@@ -82,6 +83,7 @@ app.get(['/', '/api/v1'], (req, res) => {
         inventory: '/api/v1/inventory',
         wishlist: '/api/v1/wishlist',
         payments: '/api/v1/payments',
+        orders: '/api/v1/orders',
         admin: '/api/v1/admin',
         upload: '/api/v1/upload/images',
       },
@@ -99,6 +101,7 @@ app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/checkout', checkoutRoutes);
 app.use('/api/v1/wishlist', wishlistRoutes);
 app.use('/api/v1/payments', paymentRoutes);
+app.use('/api/v1/orders', orderRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);

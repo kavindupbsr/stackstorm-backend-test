@@ -269,3 +269,24 @@ Stripe-Signature: t=1791127376,v1=<PASTE_HMAC_SHA256_SIGNATURE_HERE>
   }
 }
 
+###
+
+### 26. Finalize Order & Deduct Inventory (STORM-029)
+POST http://localhost:5000/api/v1/orders/<PASTE_ORDER_ID_HERE>/finalize
+Content-Type: application/json
+
+{
+  "payment_details": {
+    "payment_intent_id": "pi_manual_capture_001",
+    "payment_method": "stripe",
+    "amount": 485000
+  }
+}
+
+###
+
+### 27. Get Finalized Order Details & Invoice (STORM-029)
+GET http://localhost:5000/api/v1/orders/<PASTE_ORDER_ID_HERE>
+Accept: application/json
+
+
