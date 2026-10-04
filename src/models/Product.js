@@ -115,6 +115,18 @@ class Product extends Model {
       as: 'images',
       onDelete: 'CASCADE',
     });
+
+    this.hasMany(models.Review, {
+      foreignKey: 'product_id',
+      as: 'reviews',
+      onDelete: 'CASCADE',
+    });
+
+    this.hasMany(models.Wishlist, {
+      foreignKey: 'product_id',
+      as: 'wishlistItems',
+      onDelete: 'CASCADE',
+    });
   }
 }
 

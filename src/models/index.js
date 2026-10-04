@@ -9,6 +9,9 @@ const Category = require('./Category');
 const Product = require('./Product');
 const ProductVariant = require('./ProductVariant');
 const ProductImage = require('./ProductImage');
+const Review = require('./Review');
+const Wishlist = require('./Wishlist');
+const CartItem = require('./CartItem');
 
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfigs[env] || dbConfigs.development;
@@ -24,6 +27,9 @@ const models = {
   Product: Product.initModel(sequelize),
   ProductVariant: ProductVariant.initModel(sequelize),
   ProductImage: ProductImage.initModel(sequelize),
+  Review: Review.initModel(sequelize),
+  Wishlist: Wishlist.initModel(sequelize),
+  CartItem: CartItem.initModel(sequelize),
 };
 
 // Execute model associations
