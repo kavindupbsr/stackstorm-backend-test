@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { sequelize, User, CustomerProfile, LoyaltyAccount } = require('../models');
+const tokenService = require('./token.service');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -26,7 +26,7 @@ const getBcryptWorkFactor = () => {
  * @param {string} params.fullName - Customer full name
  * @param {string} [params.phone] - Optional contact phone number
  * @param {boolean} [params.marketingOptIn=false] - Optional marketing opt-in flag
- * @returns {Promise<object>} Created user (without password_hash), JWT token, and loyalty summary
+ * @returns {Promise<object>} Created user (without password_hash), token pair, and loyalty summary
  */
 const register = async ({ email, password, fullName, phone, marketingOptIn = false }) => {
   const normalizedEmail = email ? email.trim().toLowerCase() : '';
@@ -74,15 +74,7 @@ const register = async ({ email, password, fullName, phone, marketingOptIn = fal
     return { user: newUser, loyaltyAccount: newLoyaltyAccount };
   });
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    },
-    process.env.JWT_SECRET || 'stackstorm-jwt-secret-key-default-2026',
-    { expiresIn: process.env.JWT_EXPIRES_IN || '15m' }
-  );
+  const tokens = await tokenService.generateTokenPair(user);
 
   const userPayload = user.toJSON ? user.toJSON() : { ...user };
   delete userPayload.password_hash;
@@ -92,7 +84,9 @@ const register = async ({ email, password, fullName, phone, marketingOptIn = fal
 
   return {
     user: userPayload,
-    token,
+    token: tokens.accessToken,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
     loyalty: {
       tier: loyaltyAccount.tier,
       points: loyaltyAccount.points_balance,
@@ -100,7 +94,72 @@ const register = async ({ email, password, fullName, phone, marketingOptIn = fal
   };
 };
 
+/**
+ * Authenticates user credentials and returns dual token pair (access + refresh).
+ *
+ * @param {object} params
+ * @param {string} params.email
+ * @param {string} params.password
+ * @returns {Promise<object>}
+ */
+const login = async ({ email, password }) => {
+  const normalizedEmail = email ? email.trim().toLowerCase() : '';
+
+  // Query with password_hash explicitly loaded
+  const user = await User.scope('withPassword').findOne({
+    where: { email: normalizedEmail },
+  });
+
+  if (!user) {
+    throw ApiError.unauthorized('Invalid email or password');
+  }
+
+  if (!user.is_active) {
+    throw ApiError.forbidden('Account is deactivated');
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+  if (!isPasswordValid) {
+    throw ApiError.unauthorized('Invalid email or password');
+  }
+
+  const tokens = await tokenService.generateTokenPair(user);
+
+  const safeUser = user.toJSON ? user.toJSON() : { ...user };
+  delete safeUser.password_hash;
+
+  return {
+    user: safeUser,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+  };
+};
+
+/**
+ * Rotates an existing refresh token and returns a new token pair.
+ *
+ * @param {string} refreshToken
+ * @returns {Promise<object>}
+ */
+const refreshToken = async (token) => {
+  return tokenService.rotateRefreshToken(token);
+};
+
+/**
+ * Invalidates a refresh token session (logout).
+ *
+ * @param {string} token
+ * @returns {Promise<boolean>}
+ */
+const logout = async (token) => {
+  if (!token) return true;
+  return tokenService.revokeRefreshToken(token);
+};
+
 module.exports = {
   getBcryptWorkFactor,
   register,
+  login,
+  refreshToken,
+  logout,
 };
