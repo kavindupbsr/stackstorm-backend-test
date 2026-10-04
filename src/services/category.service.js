@@ -81,23 +81,22 @@ const buildCategoryTree = (categories, parentId = null, visited = new Set()) => 
     if (catParentId === parentId) {
       if (currentVisited.has(cat.id)) {
         logger.warn(`Circular reference detected in category hierarchy for id: ${cat.id}`);
-        continue;
+      } else {
+        const nextVisited = new Set(currentVisited);
+        nextVisited.add(cat.id);
+
+        const plain = typeof cat.toJSON === 'function' ? cat.toJSON() : cat;
+
+        result.push({
+          id: plain.id,
+          name: plain.name,
+          slug: plain.slug,
+          description: plain.description,
+          parent_id: catParentId,
+          is_active: plain.is_active !== undefined ? plain.is_active : true,
+          children: buildCategoryTree(categories, plain.id, nextVisited),
+        });
       }
-
-      const nextVisited = new Set(currentVisited);
-      nextVisited.add(cat.id);
-
-      const plain = typeof cat.toJSON === 'function' ? cat.toJSON() : cat;
-
-      result.push({
-        id: plain.id,
-        name: plain.name,
-        slug: plain.slug,
-        description: plain.description,
-        parent_id: catParentId,
-        is_active: plain.is_active !== undefined ? plain.is_active : true,
-        children: buildCategoryTree(categories, plain.id, nextVisited),
-      });
     }
   }
 
@@ -183,7 +182,7 @@ const getCategoryTree = async () => {
  * @returns {Promise<object>} Created category
  */
 const createCategory = async (categoryData) => {
-  const { name, slug, description, parent_id, is_active } = categoryData;
+  const { name, slug, description, parent_id: parentId, is_active: isActive } = categoryData;
 
   const existing = await Category.findOne({ where: { slug } });
   if (existing) {
@@ -194,8 +193,8 @@ const createCategory = async (categoryData) => {
     name,
     slug,
     description,
-    parent_id: parent_id || null,
-    is_active: is_active !== undefined ? is_active : true,
+    parent_id: parentId || null,
+    is_active: isActive !== undefined ? isActive : true,
   });
 
   await invalidateCategoryCache();
