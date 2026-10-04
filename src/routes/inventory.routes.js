@@ -2,6 +2,7 @@ const express = require('express');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const { ROLES } = require('../config/constants');
+const inventoryController = require('../controllers/inventory.controller');
 const { successResponse } = require('../utils/responseFormatter');
 
 const router = express.Router();
@@ -13,23 +14,32 @@ router.use(authenticate);
 router.use(authorize(ROLES.ADMIN, ROLES.INVENTORY));
 
 /**
- * @route POST /api/v1/inventory/adjust-stock
- * @desc Adjust SKU stock level
+ * @route PATCH /api/v1/inventory/variants/:sku/stock
+ * @desc Adjust SKU variant stock quantity with reason and immutable audit log
  * @access Private (Admin and Inventory Staff)
  */
-router.post('/adjust-stock', (req, res) => {
-  const { sku, delta = 0 } = req.body || {};
-  return successResponse(
-    res,
-    {
-      sku: sku || 'SKU-SAMPLE-01',
-      delta,
-      newStockLevel: 50 + Number(delta),
-      updatedBy: req.user.email,
-    },
-    'Stock level adjusted successfully'
-  );
-});
+router.patch('/variants/:sku/stock', inventoryController.adjustVariantStock);
+
+/**
+ * @route GET /api/v1/inventory/variants/:sku/logs
+ * @desc Get audit trail for a specific SKU
+ * @access Private (Admin and Inventory Staff)
+ */
+router.get('/variants/:sku/logs', inventoryController.getAuditLogs);
+
+/**
+ * @route GET /api/v1/inventory/logs
+ * @desc Get global inventory adjustment audit logs
+ * @access Private (Admin and Inventory Staff)
+ */
+router.get('/logs', inventoryController.getAuditLogs);
+
+/**
+ * @route POST /api/v1/inventory/adjust-stock
+ * @desc Adjust SKU stock level (backwards compatible legacy endpoint)
+ * @access Private (Admin and Inventory Staff)
+ */
+router.post('/adjust-stock', inventoryController.adjustStockLegacy);
 
 /**
  * @route GET /api/v1/inventory/status
@@ -43,7 +53,7 @@ router.get('/status', (req, res) => {
       warehouse: 'Dickwella Central Warehouse',
       totalSKUs: 69,
       outOfStockSKUs: 0,
-      checkedBy: req.user.email,
+      checkedBy: (req.user && req.user.email) || 'system',
     },
     'Inventory status retrieved successfully'
   );

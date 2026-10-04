@@ -17,6 +17,7 @@ const OrderItem = require('./OrderItem');
 const Payment = require('./Payment');
 const Return = require('./Return');
 const LoyaltyAccount = require('./LoyaltyAccount');
+const InventoryLog = require('./InventoryLog');
 
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfigs[env] || dbConfigs.development;
@@ -40,6 +41,7 @@ const models = {
   Payment: Payment.initModel(sequelize),
   Return: Return.initModel(sequelize),
   LoyaltyAccount: LoyaltyAccount.initModel(sequelize),
+  InventoryLog: InventoryLog.initModel(sequelize),
 };
 
 // Execute model associations
