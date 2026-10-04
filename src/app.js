@@ -2,7 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const healthRoutes = require('./routes/health.routes');
-const { errorResponse } = require('./utils/responseFormatter');
+const notFoundHandler = require('./middleware/notFoundHandler');
+const errorHandler = require('./middleware/errorHandler');
+const ApiError = require('./utils/ApiError');
 
 const app = express();
 
@@ -37,19 +39,21 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Mount API routes
 app.use('/api/v1/health', healthRoutes);
 
-// Fallback 404 Not Found Handler
-app.use((req, res) => {
-  return errorResponse(res, `Route ${req.method} ${req.originalUrl} not found`, [], 404);
-});
+// Test routes for Shift-Left automated error handling validation
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/v1/test-error/400', (req, res, next) => {
+    next(ApiError.badRequest('Deliberate 400 Validation Error', [{ field: 'email', message: 'Invalid email' }]));
+  });
 
-// Centralized Error Handling Middleware
-// eslint-disable-next-line no-unused-vars
-app.use((err, req, res, next) => {
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-  const errors = err.errors || [];
+  app.get('/api/v1/test-error/500', () => {
+    throw new Error('Deliberate Unhandled Synchronous Exception');
+  });
+}
 
-  return errorResponse(res, message, errors, statusCode);
-});
+// 404 Catch-All Not Found Middleware
+app.use(notFoundHandler);
+
+// Centralized Global Error Handling Middleware
+app.use(errorHandler);
 
 module.exports = app;

@@ -35,7 +35,7 @@ describe('STORM-003: Health API Integration Tests', () => {
 
     expect(response.body).toHaveProperty('success', false);
     expect(response.body).toHaveProperty('data', null);
-    expect(response.body.message).toContain('Route GET /api/v1/non-existent-route not found');
+    expect(response.body.message).toContain('Resource not found: GET /api/v1/non-existent-route');
     expect(Array.isArray(response.body.errors)).toBe(true);
   });
 });
