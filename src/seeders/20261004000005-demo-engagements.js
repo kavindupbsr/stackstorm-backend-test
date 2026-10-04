@@ -80,7 +80,19 @@ const reviews = [
 
 module.exports = {
   up: async (queryInterface) => {
-    await queryInterface.bulkInsert('reviews', reviews, {});
+    const dbReviews = reviews.map((r) => ({
+      id: r.id,
+      user_id: r.user_id,
+      product_id: r.product_id,
+      rating: r.rating,
+      title: r.title || 'Verified Customer Review',
+      comment: r.comment || r.review_text,
+      is_verified_purchase: r.is_verified_purchase ?? true,
+      created_at: r.created_at || new Date(),
+      updated_at: r.updated_at || new Date(),
+    }));
+
+    await queryInterface.bulkInsert('reviews', dbReviews, {});
   },
 
   down: async (queryInterface) => {

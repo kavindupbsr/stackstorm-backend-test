@@ -292,10 +292,60 @@ const loyaltyAccounts = [
 
 module.exports = {
   up: async (queryInterface) => {
-    await queryInterface.bulkInsert('users', users, {});
-    await queryInterface.bulkInsert('customer_profiles', customerProfiles, {});
-    await queryInterface.bulkInsert('addresses', addresses, {});
-    await queryInterface.bulkInsert('loyalty_accounts', loyaltyAccounts, {});
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const dbUsers = users.map((u) => ({
+      id: u.id,
+      email: u.email,
+      password_hash: u.password_hash,
+      role: u.role,
+      is_active: u.is_active,
+      failed_login_attempts: u.failed_login_attempts || 0,
+      created_at: u.created_at,
+      updated_at: u.updated_at,
+    }));
+
+    const dbCustomerProfiles = customerProfiles.map((p) => {
+      const u = userMap.get(p.user_id);
+      const validTier = ['silver', 'gold', 'platinum'].includes(p.loyalty_tier)
+        ? p.loyalty_tier
+        : 'silver';
+      return {
+        id: p.id,
+        user_id: p.user_id,
+        phone: p.phone || (u ? u.phone_number : null),
+        loyalty_tier: validTier,
+        marketing_opt_in: p.marketing_opt_in ?? false,
+        created_at: p.created_at || new Date(),
+        updated_at: p.updated_at || new Date(),
+      };
+    });
+
+    const dbAddresses = addresses.map((a) => ({
+      id: a.id,
+      user_id: a.user_id,
+      address_line1: a.address_line1 || a.street_address,
+      address_line2: a.address_line2 || null,
+      city: a.city,
+      postal_code: a.postal_code,
+      is_default: a.is_default ?? false,
+      created_at: a.created_at || new Date(),
+      updated_at: a.updated_at || new Date(),
+    }));
+
+    const dbLoyaltyAccounts = loyaltyAccounts.map((l) => ({
+      customer_id: l.customer_id,
+      points_balance: l.points_balance || 0,
+      tier: ['silver', 'gold', 'platinum'].includes(l.tier) ? l.tier : 'silver',
+      lifetime_points: l.lifetime_points ?? Math.round(l.lifetime_spend || l.points_balance || 0),
+      created_at: l.created_at || new Date(),
+      updated_at: l.updated_at || new Date(),
+    }));
+
+    await queryInterface.bulkInsert('users', dbUsers, {});
+    await queryInterface.bulkInsert('customer_profiles', dbCustomerProfiles, {});
+    await queryInterface.bulkInsert('addresses', dbAddresses, {});
+    await queryInterface.bulkInsert('loyalty_accounts', dbLoyaltyAccounts, {});
   },
 
   down: async (queryInterface) => {

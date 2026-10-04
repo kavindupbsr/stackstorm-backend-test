@@ -597,8 +597,40 @@ rawProducts.forEach((p) => {
 
 module.exports = {
   up: async (queryInterface) => {
-    await queryInterface.bulkInsert('products', products, {});
-    await queryInterface.bulkInsert('product_variants', productVariants, {});
+    const dbProducts = products.map((p) => ({
+      id: p.id,
+      category_id: p.category_id,
+      title: p.title,
+      slug: p.slug,
+      description: p.description,
+      base_price: p.base_price,
+      is_active: p.is_active,
+      created_at: p.created_at || new Date(),
+      updated_at: p.updated_at || new Date(),
+    }));
+
+    const validSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'FREE'];
+    const dbVariants = productVariants.map((v) => {
+      let normalizedSize = v.size;
+      if (normalizedSize === 'FREE_SIZE' || !validSizes.includes(normalizedSize)) {
+        normalizedSize = 'FREE';
+      }
+      return {
+        id: v.id,
+        product_id: v.product_id,
+        sku: v.sku,
+        size: normalizedSize,
+        color: v.color,
+        stock_quantity: v.stock_quantity,
+        reserved_quantity: v.reserved_quantity || 0,
+        price_override: v.price_override || null,
+        created_at: v.created_at || new Date(),
+        updated_at: v.updated_at || new Date(),
+      };
+    });
+
+    await queryInterface.bulkInsert('products', dbProducts, {});
+    await queryInterface.bulkInsert('product_variants', dbVariants, {});
   },
 
   down: async (queryInterface) => {

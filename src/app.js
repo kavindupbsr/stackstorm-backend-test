@@ -10,6 +10,7 @@ const inventoryRoutes = require('./routes/inventory.routes');
 const categoryRoutes = require('./routes/category.routes');
 const productRoutes = require('./routes/product.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const { successResponse } = require('./utils/responseFormatter');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
 const ApiError = require('./utils/ApiError');
@@ -50,6 +51,29 @@ app.use(cors(corsOptions));
 // Body parsing middlewares
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// API Root Discovery endpoint
+app.get(['/', '/api/v1'], (req, res) => {
+  return successResponse(
+    res,
+    {
+      name: 'StackStorm E-Commerce REST API',
+      version: '1.0.0',
+      description: 'Dickwella Fashion Corner Enterprise E-Commerce Platform',
+      environment: process.env.NODE_ENV || 'development',
+      endpoints: {
+        health: '/api/v1/health',
+        auth: '/api/v1/auth',
+        categories: '/api/v1/categories',
+        products: '/api/v1/products',
+        inventory: '/api/v1/inventory',
+        admin: '/api/v1/admin',
+        upload: '/api/v1/upload/images',
+      },
+    },
+    'Welcome to StackStorm API v1'
+  );
+});
 
 // Mount API routes with tiered rate limiting
 app.use('/api/v1/health', healthRoutes);

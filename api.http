@@ -1,0 +1,65 @@
+### ==============================================================================
+### StackStorm E-Commerce Platform — REST Client Test Suite
+### Dickwella Fashion Corner (SENG 31242)
+### ==============================================================================
+
+@baseUrl = http://localhost:5000/api/v1
+
+### 1. Root API Discovery & Service Directory
+GET http://localhost:5000/api/v1
+Accept: application/json
+
+###
+
+### 2. System Health, Database, Redis & Memory Probe
+GET http://localhost:5000/api/v1/health
+Accept: application/json
+
+###
+
+### 3. Categories Hierarchy Tree (Redis Cache-Aside)
+GET http://localhost:5000/api/v1/categories/tree
+Accept: application/json
+
+###
+
+### 4. Products Listing with Faceted Filtering & Pagination
+GET http://localhost:5000/api/v1/products?page=1&limit=5
+Accept: application/json
+
+###
+
+### 5. Products Filtered by Sri Lankan Rupee Price Range & Size
+GET http://localhost:5000/api/v1/products?min_price=2000&max_price=8000&size=M&limit=10
+Accept: application/json
+
+###
+
+### 6. Product Detail by Slug (with Gallery, Reviews & Real-time Stock)
+GET http://localhost:5000/api/v1/products/classic-batik-short-sleeve-shirt
+Accept: application/json
+
+###
+
+### 7. Customer Registration (STORM-012)
+POST http://localhost:5000/api/v1/auth/register
+Content-Type: application/json
+
+{
+  "email": "customer.test@dickwellafashion.lk",
+  "password": "Password123!",
+  "first_name": "Kasun",
+  "last_name": "Kalhara",
+  "phone": "+94771234567"
+}
+
+###
+
+### 8. User Login & Token Rotation (STORM-013)
+POST http://localhost:5000/api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@dickwellafashion.lk",
+  "password": "Password123!"
+}
