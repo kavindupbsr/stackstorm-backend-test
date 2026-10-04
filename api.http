@@ -234,3 +234,38 @@ Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
     }
   ]
 }
+
+###
+
+### 24. Create Stripe PaymentIntent for Order (STORM-028)
+POST http://localhost:5000/api/v1/payments/create-intent
+Content-Type: application/json
+
+{
+  "order_id": "<PASTE_ORDER_ID_FROM_CHECKOUT_INITIATE>"
+}
+
+###
+
+### 25. Stripe Webhook Handler - HMAC Signature Verification (STORM-028)
+POST http://localhost:5000/api/v1/payments/webhook
+Content-Type: application/json
+Stripe-Signature: t=1791127376,v1=<PASTE_HMAC_SHA256_SIGNATURE_HERE>
+
+{
+  "id": "evt_test_webhook_sample_001",
+  "object": "event",
+  "type": "payment_intent.succeeded",
+  "data": {
+    "object": {
+      "id": "pi_test_sample_intent_001",
+      "amount": 485000,
+      "currency": "lkr",
+      "status": "succeeded",
+      "metadata": {
+        "order_id": "<PASTE_ORDER_ID_HERE>"
+      }
+    }
+  }
+}
+
