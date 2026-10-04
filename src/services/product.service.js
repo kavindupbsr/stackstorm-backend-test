@@ -149,13 +149,21 @@ const filterFallbackCatalog = (params = {}) => {
 
   // Sorting
   if (sort === 'price_asc') {
-    items.sort((a, b) => a.base_price - b.base_price);
+    items.sort((a, b) => a.base_price - b.base_price || String(a.id).localeCompare(String(b.id)));
   } else if (sort === 'price_desc') {
-    items.sort((a, b) => b.base_price - a.base_price);
+    items.sort((a, b) => b.base_price - a.base_price || String(a.id).localeCompare(String(b.id)));
   } else if (sort === 'newest') {
-    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    items.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        String(a.id).localeCompare(String(b.id))
+    );
   } else {
-    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    items.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        String(a.id).localeCompare(String(b.id))
+    );
   }
 
   // Keyset cursor handling
@@ -278,13 +286,25 @@ const listProducts = async (params = {}) => {
     }
 
     // 3. Determine sorting
-    let order = [['created_at', 'DESC']];
+    let order = [
+      ['created_at', 'DESC'],
+      ['id', 'ASC'],
+    ];
     if (sort === 'price_asc') {
-      order = [['base_price', 'ASC']];
+      order = [
+        ['base_price', 'ASC'],
+        ['id', 'ASC'],
+      ];
     } else if (sort === 'price_desc') {
-      order = [['base_price', 'DESC']];
+      order = [
+        ['base_price', 'DESC'],
+        ['id', 'ASC'],
+      ];
     } else if (sort === 'newest') {
-      order = [['created_at', 'DESC']];
+      order = [
+        ['created_at', 'DESC'],
+        ['id', 'ASC'],
+      ];
     }
 
     // 4. Query PostgreSQL with eager loading

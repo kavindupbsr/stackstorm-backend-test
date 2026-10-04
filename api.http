@@ -112,3 +112,32 @@ Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
 }
 
 
+###
+
+### 14. 15-Minute Temporary Stock Reservation (STORM-024)
+POST http://localhost:5000/api/v1/checkout/reserve
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+{
+  "items": [
+    {
+      "variant_id": "d0000000-0000-0000-0000-000000000001",
+      "quantity": 1
+    }
+  ]
+}
+
+###
+
+### 15. Release Stock Reservation / Cancellation (STORM-024)
+POST http://localhost:5000/api/v1/checkout/release/<PASTE_RESERVATION_ID_HERE>
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+###
+
+### 16. Confirm Stock Reservation upon Payment Success (STORM-024)
+POST http://localhost:5000/api/v1/checkout/confirm/<PASTE_RESERVATION_ID_HERE>
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
