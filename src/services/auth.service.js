@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { sequelize, User, CustomerProfile, LoyaltyAccount } = require('../models');
 const tokenService = require('./token.service');
+const lockoutService = require('./lockout.service');
 const ApiError = require('../utils/ApiError');
 
 /**
@@ -111,6 +112,14 @@ const login = async ({ email, password }) => {
   });
 
   if (!user) {
+    const lockResult = await lockoutService.recordFailedAttempt(normalizedEmail);
+    if (lockResult.isLocked) {
+      throw ApiError.locked(
+        `Account is locked due to 5 consecutive failed login attempts. Please try again in ${lockResult.remainingMinutes} minute${
+          lockResult.remainingMinutes > 1 ? 's' : ''
+        }.`
+      );
+    }
     throw ApiError.unauthorized('Invalid email or password');
   }
 
@@ -120,8 +129,18 @@ const login = async ({ email, password }) => {
 
   const isPasswordValid = await bcrypt.compare(password, user.password_hash);
   if (!isPasswordValid) {
+    const lockResult = await lockoutService.recordFailedAttempt(normalizedEmail);
+    if (lockResult.isLocked) {
+      throw ApiError.locked(
+        `Account is locked due to 5 consecutive failed login attempts. Please try again in ${lockResult.remainingMinutes} minute${
+          lockResult.remainingMinutes > 1 ? 's' : ''
+        }.`
+      );
+    }
     throw ApiError.unauthorized('Invalid email or password');
   }
+
+  await lockoutService.resetFailedAttempts(normalizedEmail);
 
   const tokens = await tokenService.generateTokenPair(user);
 

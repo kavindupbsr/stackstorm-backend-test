@@ -44,6 +44,10 @@ class ApiError extends Error {
     return new ApiError(409, message, errors);
   }
 
+  static locked(message = 'Account is locked', errors = []) {
+    return new ApiError(423, message, errors);
+  }
+
   static internal(message = 'Internal Server Error', errors = []) {
     return new ApiError(500, message, errors, false);
   }

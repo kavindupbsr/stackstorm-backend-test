@@ -1,6 +1,7 @@
 const express = require('express');
 const authController = require('../controllers/auth.controller');
 const authenticate = require('../middleware/authenticate');
+const checkLockout = require('../middleware/checkLockout');
 const { successResponse } = require('../utils/responseFormatter');
 const {
   validate,
@@ -20,10 +21,10 @@ router.post('/register', validate(registerValidationRules), authController.regis
 
 /**
  * @route   POST /api/v1/auth/login
- * @desc    Authenticate credentials and issue access + refresh token pair
+ * @desc    Authenticate credentials and issue access + refresh token pair with lockout defense
  * @access  Public
  */
-router.post('/login', validate(loginValidationRules), authController.login);
+router.post('/login', checkLockout, validate(loginValidationRules), authController.login);
 
 /**
  * @route   POST /api/v1/auth/refresh-token
