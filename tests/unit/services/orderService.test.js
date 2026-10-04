@@ -112,4 +112,81 @@ describe('Unit: OrderService & Line Item Finalization (STORM-029)', () => {
       await expect(orderService.getOrderById('ord-cust-1', 'user-bbb')).rejects.toThrow(ApiError);
     });
   });
+
+  describe('getCustomerOrders (STORM-033)', () => {
+    it('should throw unauthorized error if userId is missing', async () => {
+      await expect(orderService.getCustomerOrders(null)).rejects.toThrow(/user identity is required/i);
+    });
+
+    it('should return only orders belonging to requesting user', async () => {
+      const user1 = 'usr-test-101';
+      const user2 = 'usr-test-102';
+
+      orderService.fallbackOrdersStore.set('ord-u1', {
+        id: 'ord-u1',
+        order_number: 'DFC-TEST-U1',
+        customer_id: user1,
+        total_amount: 5000,
+        items: [],
+      });
+      orderService.fallbackOrdersStore.set('ord-u2', {
+        id: 'ord-u2',
+        order_number: 'DFC-TEST-U2',
+        customer_id: user2,
+        total_amount: 8000,
+        items: [],
+      });
+
+      const result = await orderService.getCustomerOrders(user1);
+      expect(result.orders).toBeDefined();
+      expect(result.pagination).toBeDefined();
+      expect(result.orders.every((o) => o.customer_id === user1)).toBe(true);
+    });
+  });
+
+  describe('getOrderTracking (STORM-033)', () => {
+    it('should throw badRequest if orderId is missing', async () => {
+      await expect(orderService.getOrderTracking(null, 'user-123')).rejects.toThrow(/order_id is required/i);
+    });
+
+    it('should throw unauthorized if userId is missing', async () => {
+      await expect(orderService.getOrderTracking('ord-123', null)).rejects.toThrow(/user identity is required/i);
+    });
+
+    it('should throw forbidden when user attempts to track another customer order', async () => {
+      orderService.fallbackOrdersStore.set('ord-track-secret', {
+        id: 'ord-track-secret',
+        customer_id: 'user-owner',
+        order_status: 'processing',
+        total_amount: 4500,
+      });
+
+      await expect(
+        orderService.getOrderTracking('ord-track-secret', 'user-intruder')
+      ).rejects.toThrow(/permission/i);
+    });
+
+    it('should construct sequential delivery milestone steps', async () => {
+      orderService.fallbackOrdersStore.set('ord-track-valid', {
+        id: 'ord-track-valid',
+        order_number: 'DFC-TEST-TRACK',
+        customer_id: 'user-owner',
+        order_status: 'processing',
+        payment_status: 'paid',
+        total_amount: 6000,
+      });
+
+      const tracking = await orderService.getOrderTracking('ord-track-valid', 'user-owner');
+      expect(tracking.order_id).toBe('ord-track-valid');
+      expect(tracking.current_status).toBe('processing');
+      expect(Array.isArray(tracking.milestones)).toBe(true);
+      expect(tracking.milestones.length).toBe(4);
+
+      const placed = tracking.milestones.find((m) => m.key === 'placed');
+      const processing = tracking.milestones.find((m) => m.key === 'processing');
+      expect(placed.status).toBe('completed');
+      expect(processing.status).toBe('current');
+    });
+  });
 });
+

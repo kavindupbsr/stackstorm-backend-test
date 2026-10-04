@@ -1,8 +1,23 @@
 const express = require('express');
 const orderController = require('../controllers/order.controller');
+const authenticate = require('../middleware/authenticate');
 const optionalAuthenticate = require('../middleware/optionalAuthenticate');
 
 const router = express.Router();
+
+/**
+ * @route   GET /api/v1/orders/my-orders
+ * @desc    Get paginated order history for the authenticated customer
+ * @access  Private (Authenticated Customer)
+ */
+router.get('/my-orders', authenticate, orderController.getMyOrders);
+
+/**
+ * @route   GET /api/v1/orders/:id/track
+ * @desc    Get real-time delivery tracking milestone history for an order
+ * @access  Private (Authenticated Customer)
+ */
+router.get('/:id/track', authenticate, orderController.trackOrder);
 
 /**
  * @route   GET /api/v1/orders/:id
