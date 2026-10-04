@@ -26,7 +26,7 @@ const getProductRatingStats = async (productId) => {
     }
 
     const sum = allReviews.reduce((acc, r) => acc + (r.rating || 0), 0);
-    const average_rating = Number((sum / review_count).toFixed(1));
+    const average_rating = Math.round((sum / review_count) * 100) / 100;
     return { average_rating, review_count };
   } catch (err) {
     logger.warn(`[REVIEW_SERVICE] Error calculating rating stats: ${err.message}`);
@@ -40,7 +40,7 @@ const getProductRatingStats = async (productId) => {
   }
   const sum = fallbacks.reduce((acc, r) => acc + (r.rating || 0), 0);
   return {
-    average_rating: Number((sum / fallbacks.length).toFixed(1)),
+    average_rating: Math.round((sum / fallbacks.length) * 100) / 100,
     review_count: fallbacks.length,
   };
 };
