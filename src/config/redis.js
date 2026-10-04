@@ -32,9 +32,40 @@ const inMemoryClient = {
     return inMemoryStore.has(key) ? 1 : 0;
   },
   del: async (key) => {
+    if (Array.isArray(key)) {
+      let count = 0;
+      key.forEach((k) => {
+        if (inMemoryStore.delete(k)) count += 1;
+      });
+      return count;
+    }
     const existed = inMemoryStore.has(key);
     inMemoryStore.delete(key);
     return existed ? 1 : 0;
+  },
+  scan: async (cursor, matchOption, pattern) => {
+    let pat = pattern;
+    if (matchOption && typeof matchOption === 'string' && matchOption.toLowerCase() === 'match') {
+      pat = pattern;
+    } else if (typeof matchOption === 'string') {
+      pat = matchOption;
+    }
+    const escaped = (pat || '*').replace(/([.+?^=!:${}()|[\]/\\])/g, '\\$1').replace(/\*/g, '.*');
+    const regex = new RegExp(`^${escaped}$`);
+    const matched = [];
+    for (const key of inMemoryStore.keys()) {
+      if (regex.test(key)) {
+        matched.push(key);
+      }
+    }
+    return ['0', matched];
+  },
+  keys: async (pattern) => {
+    const escaped = (pattern || '*')
+      .replace(/([.+?^=!:${}()|[\]/\\])/g, '\\$1')
+      .replace(/\*/g, '.*');
+    const regex = new RegExp(`^${escaped}$`);
+    return Array.from(inMemoryStore.keys()).filter((k) => regex.test(k));
   },
   quit: async () => {
     inMemoryStore.clear();

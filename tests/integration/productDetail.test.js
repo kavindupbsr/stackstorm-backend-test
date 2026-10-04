@@ -15,9 +15,7 @@ describe('Integration: Product Detail API with Variant Matrix & Gallery (STORM-0
 
   describe('GET /api/v1/products/:slug', () => {
     it('should return 200 with complete product details, variants matrix, and images', async () => {
-      const response = await request(app).get(
-        '/api/v1/products/classic-linen-batik-shirt'
-      );
+      const response = await request(app).get('/api/v1/products/classic-linen-batik-shirt');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -52,9 +50,7 @@ describe('Integration: Product Detail API with Variant Matrix & Gallery (STORM-0
         expect(v).toHaveProperty('stock_quantity');
         expect(v).toHaveProperty('reserved_quantity');
         expect(v).toHaveProperty('available_stock');
-        expect(v.available_stock).toBe(
-          Math.max(0, v.stock_quantity - v.reserved_quantity)
-        );
+        expect(v.available_stock).toBe(Math.max(0, v.stock_quantity - v.reserved_quantity));
       });
 
       // Assert review statistics
@@ -65,9 +61,7 @@ describe('Integration: Product Detail API with Variant Matrix & Gallery (STORM-0
     });
 
     it('should retrieve existing product using standard slug from seeders', async () => {
-      const response = await request(app).get(
-        '/api/v1/products/tailored-charcoal-formal-trousers'
-      );
+      const response = await request(app).get('/api/v1/products/tailored-charcoal-formal-trousers');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -77,9 +71,7 @@ describe('Integration: Product Detail API with Variant Matrix & Gallery (STORM-0
 
     it('should return HTTP 404 when querying a non-existent product slug', async () => {
       const nonExistentSlug = 'completely-unknown-fashion-item-999';
-      const response = await request(app).get(
-        `/api/v1/products/${nonExistentSlug}`
-      );
+      const response = await request(app).get(`/api/v1/products/${nonExistentSlug}`);
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);

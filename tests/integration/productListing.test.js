@@ -120,9 +120,7 @@ describe('Integration: Product Listing, Multi-Faceted Filtering & Pagination (ST
       expect(response.body.data.products.length).toBeGreaterThan(0);
 
       response.body.data.products.forEach((prod) => {
-        const hasNavy = prod.variants.some((v) =>
-          String(v.color).toLowerCase().includes('navy')
-        );
+        const hasNavy = prod.variants.some((v) => String(v.color).toLowerCase().includes('navy'));
         expect(hasNavy).toBe(true);
       });
     });

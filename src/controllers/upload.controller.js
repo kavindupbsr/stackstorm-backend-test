@@ -14,7 +14,12 @@ const uploadImages = async (req, res, next) => {
     const { files } = req;
 
     if (!files || !Array.isArray(files) || files.length === 0) {
-      return errorResponse(res, 'No files were uploaded. Please provide an image file under the "images" field.', [], 400);
+      return errorResponse(
+        res,
+        'No files were uploaded. Please provide an image file under the "images" field.',
+        [],
+        400
+      );
     }
 
     const urls = files.map((file) => {
@@ -27,12 +32,7 @@ const uploadImages = async (req, res, next) => {
       return `${CDN_BASE_URL}/${key}`;
     });
 
-    return successResponse(
-      res,
-      { urls },
-      'Images uploaded successfully',
-      201
-    );
+    return successResponse(res, { urls }, 'Images uploaded successfully', 201);
   } catch (error) {
     next(error);
   }

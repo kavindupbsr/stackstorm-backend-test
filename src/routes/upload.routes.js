@@ -17,18 +17,10 @@ const handleUpload = (req, res, next) => {
   upload.array('images', 5)(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
-        return next(
-          ApiError.badRequest(
-            'File too large. Maximum permitted file size is 5MB.'
-          )
-        );
+        return next(ApiError.badRequest('File too large. Maximum permitted file size is 5MB.'));
       }
       if (err.code === 'LIMIT_FILE_COUNT') {
-        return next(
-          ApiError.badRequest(
-            'Too many files. Maximum permitted file count is 5.'
-          )
-        );
+        return next(ApiError.badRequest('Too many files. Maximum permitted file count is 5.'));
       }
       return next(err);
     }
@@ -41,11 +33,6 @@ const handleUpload = (req, res, next) => {
  * @desc    Upload product or review images to S3 / Cloud Storage
  * @access  Private (Authenticated Users)
  */
-router.post(
-  '/images',
-  authenticate,
-  handleUpload,
-  uploadController.uploadImages
-);
+router.post('/images', authenticate, handleUpload, uploadController.uploadImages);
 
 module.exports = router;
