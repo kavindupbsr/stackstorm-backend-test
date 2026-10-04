@@ -2,10 +2,28 @@ const { Sequelize } = require('sequelize');
 const dbConfigs = require('../config/database');
 const { logger } = require('../config/logger');
 
+const User = require('./User');
+const CustomerProfile = require('./CustomerProfile');
+const Address = require('./Address');
+
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfigs[env] || dbConfigs.development;
 
 const sequelize = new Sequelize(config.database, config.username, config.password, config);
+
+// Initialize all models
+const models = {
+  User: User.initModel(sequelize),
+  CustomerProfile: CustomerProfile.initModel(sequelize),
+  Address: Address.initModel(sequelize),
+};
+
+// Execute model associations
+Object.values(models).forEach((model) => {
+  if (typeof model.associate === 'function') {
+    model.associate(models);
+  }
+});
 
 /**
  * Connect to PostgreSQL with exponential backoff retry strategy.
@@ -53,6 +71,7 @@ const db = {
   sequelize,
   Sequelize,
   connectWithRetry,
+  ...models,
 };
 
 module.exports = db;
