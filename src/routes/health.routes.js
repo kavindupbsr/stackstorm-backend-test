@@ -18,8 +18,8 @@ router.get('/', (req, res) => {
     memoryUsage: {
       rss: `${Math.round(process.memoryUsage().rss / 1024 / 1024)} MB`,
       heapTotal: `${Math.round(process.memoryUsage().heapTotal / 1024 / 1024)} MB`,
-      heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`
-    }
+      heapUsed: `${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB`,
+    },
   };
 
   return successResponse(res, healthData, 'System is healthy and operational', 200);

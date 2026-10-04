@@ -11,7 +11,15 @@ if (!fs.existsSync(logDir)) {
 }
 
 // Sensitive fields to sanitize/redact from logs to prevent PII exposure (NFR-007)
-const SENSITIVE_KEYS = ['password', 'confirmPassword', 'token', 'refreshToken', 'accessToken', 'cvv', 'creditCard'];
+const SENSITIVE_KEYS = [
+  'password',
+  'confirmPassword',
+  'token',
+  'refreshToken',
+  'accessToken',
+  'cvv',
+  'creditCard',
+];
 
 const sanitizeMetadata = winston.format((info) => {
   const sanitize = (obj) => {
@@ -57,7 +65,7 @@ const combinedFileTransport = new winston.transports.DailyRotateFile({
   maxSize: '20m',
   maxFiles: '14d',
   format: jsonFormat,
-  level: 'info'
+  level: 'info',
 });
 
 // File transport dedicated to errors
@@ -67,20 +75,17 @@ const errorFileTransport = new winston.transports.DailyRotateFile({
   maxSize: '20m',
   maxFiles: '30d',
   format: jsonFormat,
-  level: 'error'
+  level: 'error',
 });
 
-const transports = [
-  combinedFileTransport,
-  errorFileTransport
-];
+const transports = [combinedFileTransport, errorFileTransport];
 
 // Add console transport (suppressed in test environment if needed)
 if (process.env.NODE_ENV !== 'test') {
   transports.push(
     new winston.transports.Console({
       format: consoleFormat,
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug'
+      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     })
   );
 } else {
@@ -89,7 +94,7 @@ if (process.env.NODE_ENV !== 'test') {
     new winston.transports.Console({
       format: jsonFormat,
       level: 'error',
-      silent: true
+      silent: true,
     })
   );
 }
@@ -98,9 +103,9 @@ const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: jsonFormat,
   defaultMeta: { service: 'stackstorm-backend' },
-  transports
+  transports,
 });
 
 module.exports = {
-  logger
+  logger,
 };

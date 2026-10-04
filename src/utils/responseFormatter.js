@@ -23,7 +23,7 @@ const successResponse = (res, data = null, message = 'Success', statusCode = 200
     success: true,
     data,
     message,
-    errors: []
+    errors: [],
   });
 };
 
@@ -41,11 +41,11 @@ const errorResponse = (res, message = 'An error occurred', errors = [], statusCo
     success: false,
     data: null,
     message,
-    errors: Array.isArray(errors) ? errors : [errors]
+    errors: Array.isArray(errors) ? errors : [errors],
   });
 };
 
 module.exports = {
   successResponse,
-  errorResponse
+  errorResponse,
 };

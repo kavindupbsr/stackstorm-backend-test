@@ -12,7 +12,7 @@ describe('STORM-004: Global Error & 404 Handling Integration Tests', () => {
       success: false,
       data: null,
       message: 'Resource not found: GET /api/v1/non-existent-route',
-      errors: []
+      errors: [],
     });
   });
 

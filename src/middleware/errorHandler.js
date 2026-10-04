@@ -8,7 +8,7 @@ const { errorResponse } = require('../utils/responseFormatter');
  */
 // eslint-disable-next-line no-unused-vars
 const errorHandler = (err, req, res, next) => {
-  let statusCode = err.statusCode || 500;
+  const statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
   let errors = err.errors || [];
 
@@ -25,7 +25,7 @@ const errorHandler = (err, req, res, next) => {
     url: req.originalUrl,
     ip: req.ip || req.connection?.remoteAddress,
     isOperational: err.isOperational || false,
-    stack: err.stack
+    stack: err.stack,
   });
 
   return errorResponse(res, message, errors, statusCode);

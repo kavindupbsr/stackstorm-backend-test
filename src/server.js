@@ -9,7 +9,9 @@ const server = http.createServer(app);
 // Start HTTP server listener
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
-    logger.info(`Server listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+    logger.info(
+      `Server listening on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`
+    );
     logger.info(`Healthcheck probe available at http://localhost:${PORT}/api/v1/health`);
   });
 }

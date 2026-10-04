@@ -14,7 +14,7 @@ app.use(helmet());
 // CORS configuration
 const allowedOrigins = [
   process.env.CLIENT_URL || 'http://localhost:3000',
-  process.env.ADMIN_URL || 'http://localhost:3001'
+  process.env.ADMIN_URL || 'http://localhost:3001',
 ];
 
 app.use(
@@ -28,7 +28,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   })
 );
 
@@ -42,7 +42,11 @@ app.use('/api/v1/health', healthRoutes);
 // Test routes for Shift-Left automated error handling validation
 if (process.env.NODE_ENV !== 'production') {
   app.get('/api/v1/test-error/400', (req, res, next) => {
-    next(ApiError.badRequest('Deliberate 400 Validation Error', [{ field: 'email', message: 'Invalid email' }]));
+    next(
+      ApiError.badRequest('Deliberate 400 Validation Error', [
+        { field: 'email', message: 'Invalid email' },
+      ])
+    );
   });
 
   app.get('/api/v1/test-error/500', () => {

@@ -11,7 +11,7 @@ const createMockRes = () => {
     json(payload) {
       this.body = payload;
       return this;
-    }
+    },
   };
   return res;
 };
@@ -27,7 +27,7 @@ describe('STORM-003: responseFormatter Unit Tests', () => {
         success: true,
         data: null,
         message: 'Success',
-        errors: []
+        errors: [],
       });
       expect(Object.keys(res.body)).toEqual(['success', 'data', 'message', 'errors']);
     });
@@ -42,7 +42,7 @@ describe('STORM-003: responseFormatter Unit Tests', () => {
         success: true,
         data: testData,
         message: 'Resource created successfully',
-        errors: []
+        errors: [],
       });
     });
   });
@@ -57,7 +57,7 @@ describe('STORM-003: responseFormatter Unit Tests', () => {
         success: false,
         data: null,
         message: 'An error occurred',
-        errors: []
+        errors: [],
       });
       expect(Object.keys(res.body)).toEqual(['success', 'data', 'message', 'errors']);
     });
@@ -66,7 +66,7 @@ describe('STORM-003: responseFormatter Unit Tests', () => {
       const res = createMockRes();
       const validationErrors = [
         { field: 'email', message: 'Email is required' },
-        { field: 'password', message: 'Password must be at least 8 characters' }
+        { field: 'password', message: 'Password must be at least 8 characters' },
       ];
       errorResponse(res, 'Validation Failed', validationErrors, 400);
 
@@ -75,7 +75,7 @@ describe('STORM-003: responseFormatter Unit Tests', () => {
         success: false,
         data: null,
         message: 'Validation Failed',
-        errors: validationErrors
+        errors: validationErrors,
       });
       expect(res.body.success).toBe(false);
       expect(res.body.data).toBeNull();

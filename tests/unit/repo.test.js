@@ -11,20 +11,10 @@ describe('STORM-001: Repository Architecture & Baseline Configs', () => {
     assert.ok(fs.existsSync(gitignorePath), '.gitignore must exist in root');
 
     const content = fs.readFileSync(gitignorePath, 'utf-8');
-    const requiredPatterns = [
-      'node_modules/',
-      '.env',
-      'coverage/',
-      'dist/',
-      '*.log',
-      '.DS_Store'
-    ];
+    const requiredPatterns = ['node_modules/', '.env', 'coverage/', 'dist/', '*.log', '.DS_Store'];
 
     for (const pattern of requiredPatterns) {
-      assert.ok(
-        content.includes(pattern),
-        `.gitignore must include ignore pattern: "${pattern}"`
-      );
+      assert.ok(content.includes(pattern), `.gitignore must include ignore pattern: "${pattern}"`);
     }
   });
 
@@ -34,7 +24,10 @@ describe('STORM-001: Repository Architecture & Baseline Configs', () => {
 
     const content = fs.readFileSync(editorconfigPath, 'utf-8');
     assert.ok(content.includes('indent_size = 2'), 'EditorConfig must specify indent_size = 2');
-    assert.ok(content.includes('indent_style = space'), 'EditorConfig must specify indent_style = space');
+    assert.ok(
+      content.includes('indent_style = space'),
+      'EditorConfig must specify indent_style = space'
+    );
     assert.ok(content.includes('end_of_line = lf'), 'EditorConfig must specify end_of_line = lf');
     assert.ok(content.includes('charset = utf-8'), 'EditorConfig must specify charset = utf-8');
   });
@@ -60,12 +53,18 @@ describe('STORM-001: Repository Architecture & Baseline Configs', () => {
     assert.ok(fs.existsSync(readmePath), 'README.md must exist in root');
 
     const content = fs.readFileSync(readmePath, 'utf-8');
-    assert.ok(content.includes('Dickwella Fashion Corner'), 'README must mention client Dickwella Fashion Corner');
+    assert.ok(
+      content.includes('Dickwella Fashion Corner'),
+      'README must mention client Dickwella Fashion Corner'
+    );
     assert.ok(content.includes('Amarawickrama R.H.'), 'README must credit Amarawickrama R.H.');
     assert.ok(content.includes('S. Thanoogithan'), 'README must credit S. Thanoogithan');
     assert.ok(content.includes('B.K. Pabasara'), 'README must credit B.K. Pabasara');
     assert.ok(content.includes('Lakshani A.T.'), 'README must credit Lakshani A.T.');
-    assert.ok(content.includes('stackstorm-backend'), 'README must describe stackstorm-backend repository');
+    assert.ok(
+      content.includes('stackstorm-backend'),
+      'README must describe stackstorm-backend repository'
+    );
   });
 
   it('should have a .gitattributes file enforcing LF line endings', () => {
