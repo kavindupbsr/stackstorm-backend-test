@@ -72,12 +72,14 @@ const getProfile = async (userId) => {
 
     if (user) {
       const addresses = (user.addresses || []).map(formatAddress);
+      const phoneVal = user.customerProfile ? user.customerProfile.phone : null;
       return {
         id: user.id,
         email: user.email,
         role: user.role,
         is_active: user.is_active,
-        phone: user.customerProfile ? user.customerProfile.phone : null,
+        phone: phoneVal,
+        phone_number: phoneVal,
         loyalty_tier:
           (user.customerProfile && user.customerProfile.loyalty_tier) ||
           (user.loyaltyAccount && user.loyaltyAccount.tier) ||
@@ -100,7 +102,13 @@ const getProfile = async (userId) => {
       .filter((a) => a.user_id === userId)
       .sort((a, b) => (b.is_default ? 1 : 0) - (a.is_default ? 1 : 0))
       .map(formatAddress);
-    return { ...fallback, addresses: fallbackAddresses };
+    const phoneVal = fallback.phone || fallback.phone_number || null;
+    return {
+      ...fallback,
+      phone: phoneVal,
+      phone_number: phoneVal,
+      addresses: fallbackAddresses,
+    };
   }
 
   throw ApiError.notFound('User profile not found');
@@ -110,13 +118,16 @@ const getProfile = async (userId) => {
  * Updates profile properties (phone number, marketing opt-in) for an authenticated user.
  *
  * @param {string} userId - User UUID
- * @param {object} payload - { phone, marketing_opt_in }
+ * @param {object} payload - { phone, phone_number, marketing_opt_in }
  * @returns {Promise<object>}
  */
-const updateProfile = async (userId, { phone, marketing_opt_in } = {}) => {
+const updateProfile = async (userId, payload = {}) => {
   if (!userId) {
     throw ApiError.unauthorized('User identity is required');
   }
+
+  const phone = payload.phone !== undefined ? payload.phone : payload.phone_number;
+  const { marketing_opt_in } = payload;
 
   if (phone !== undefined && phone !== null && phone !== '') {
     if (!isValidPhone(phone)) {
@@ -157,7 +168,10 @@ const updateProfile = async (userId, { phone, marketing_opt_in } = {}) => {
     role: 'customer',
     is_active: true,
   };
-  if (phone !== undefined) existing.phone = phone;
+  if (phone !== undefined) {
+    existing.phone = phone;
+    existing.phone_number = phone;
+  }
   if (marketing_opt_in !== undefined) existing.marketing_opt_in = Boolean(marketing_opt_in);
   fallbackProfileStore.set(userId, existing);
   return getProfile(userId);
