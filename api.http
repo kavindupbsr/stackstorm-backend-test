@@ -141,3 +141,51 @@ Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
 POST http://localhost:5000/api/v1/checkout/confirm/<PASTE_RESERVATION_ID_HERE>
 Content-Type: application/json
 Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+###
+
+### 17. Add Product to Customer Wishlist (STORM-025)
+POST http://localhost:5000/api/v1/wishlist
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+{
+  "productId": "c0000000-0000-0000-0000-000000000001"
+}
+
+###
+
+### 18. Retrieve Customer Wishlist with Stock & LKR Pricing (STORM-025)
+GET http://localhost:5000/api/v1/wishlist
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+Accept: application/json
+
+###
+
+### 19. Toggle Product in Wishlist (STORM-025)
+POST http://localhost:5000/api/v1/wishlist/toggle
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+{
+  "productId": "c0000000-0000-0000-0000-000000000001"
+}
+
+###
+
+### 20. Remove Product from Wishlist (STORM-025)
+DELETE http://localhost:5000/api/v1/wishlist/c0000000-0000-0000-0000-000000000001
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+###
+
+### 21. Trigger SendGrid Back-in-Stock Restock Alerts (STORM-025)
+POST http://localhost:5000/api/v1/wishlist/restock-alert/c0000000-0000-0000-0000-000000000001
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+{
+  "variant_sku": "BATIK-SHIRT-M-BLU",
+  "restocked_quantity": 25
+}
+
