@@ -189,3 +189,48 @@ Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
   "restocked_quantity": 25
 }
 
+###
+
+### 22. Initiate Guest Checkout (STORM-027)
+POST http://localhost:5000/api/v1/checkout/initiate
+Content-Type: application/json
+
+{
+  "guest_email": "guest_shopper@dickwella.lk",
+  "guest_phone": "+94771234567",
+  "shipping_address": {
+    "line1": "124 Beach Road",
+    "city": "Dickwella",
+    "postal_code": "81100",
+    "country": "Sri Lanka"
+  },
+  "items": [
+    {
+      "variant_id": "d0000000-0000-0000-0000-000000000001",
+      "quantity": 1
+    }
+  ],
+  "notes": "Deliver during business hours"
+}
+
+###
+
+### 23. Initiate Registered Customer Checkout (STORM-027)
+POST http://localhost:5000/api/v1/checkout/initiate
+Content-Type: application/json
+Authorization: Bearer <PASTE_CUSTOMER_ACCESS_TOKEN_HERE>
+
+{
+  "shipping_address": {
+    "line1": "45 Temple Road",
+    "city": "Dickwella",
+    "postal_code": "81100",
+    "country": "Sri Lanka"
+  },
+  "items": [
+    {
+      "variant_id": "d0000000-0000-0000-0000-000000000001",
+      "quantity": 2
+    }
+  ]
+}

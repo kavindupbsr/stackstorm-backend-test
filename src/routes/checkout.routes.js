@@ -7,6 +7,13 @@ const router = express.Router();
 router.use(optionalAuthenticate);
 
 /**
+ * @route   POST /api/v1/checkout/initiate
+ * @desc    Initiate checkout for guest or registered customer with shipping address
+ * @access  Public (Guest or Authenticated)
+ */
+router.post('/initiate', checkoutController.initiate);
+
+/**
  * @route   POST /api/v1/checkout/reserve
  * @desc    Reserve variant inventory for 15 minutes during checkout
  * @access  Public (Guest or Authenticated)
