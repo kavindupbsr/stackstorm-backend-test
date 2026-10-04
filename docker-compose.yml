@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: stackstorm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-stackstorm_dev}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-stackstorm_dev}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stackstorm_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: stackstorm_redis
+    restart: unless-stopped
+    command: >
+      sh -c 'if [ -z "$$REDIS_PASSWORD" ]; then
+        redis-server --appendonly yes;
+      else
+        redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD";
+      fi'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: >
+        sh -c 'if [ -z "$$REDIS_PASSWORD" ]; then
+          redis-cli ping | grep -q PONG;
+        else
+          redis-cli -a "$$REDIS_PASSWORD" ping | grep -q PONG;
+        fi'
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - stackstorm_network
+
+volumes:
+  postgres_data:
+    name: stackstorm_postgres_data
+  redis_data:
+    name: stackstorm_redis_data
+
+networks:
+  stackstorm_network:
+    name: stackstorm_network
+    driver: bridge
