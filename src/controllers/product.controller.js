@@ -1,5 +1,5 @@
 const productService = require('../services/product.service');
-const { successResponse } = require('../utils/responseFormatter');
+const { successResponse, errorResponse } = require('../utils/responseFormatter');
 
 /**
  * Controller for retrieving paginated product catalog with multi-faceted filtering.
@@ -47,6 +47,33 @@ const getProducts = async (req, res, next) => {
   }
 };
 
+/**
+ * Controller for retrieving complete product details by slug.
+ *
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware
+ */
+const getProductBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const product = await productService.getProductBySlug(slug);
+
+    if (!product) {
+      return errorResponse(res, `Product not found: ${slug}`, [], 404);
+    }
+
+    return successResponse(
+      res,
+      product,
+      'Product details retrieved successfully'
+    );
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
+  getProductBySlug,
 };
