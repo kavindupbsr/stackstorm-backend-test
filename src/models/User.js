@@ -116,6 +116,23 @@ class User extends Model {
       as: 'cartItems',
       onDelete: 'CASCADE',
     });
+
+    this.hasMany(models.Order, {
+      foreignKey: 'customer_id',
+      as: 'orders',
+    });
+
+    this.hasMany(models.Return, {
+      foreignKey: 'user_id',
+      as: 'returns',
+      onDelete: 'CASCADE',
+    });
+
+    this.hasOne(models.LoyaltyAccount, {
+      foreignKey: 'customer_id',
+      as: 'loyaltyAccount',
+      onDelete: 'CASCADE',
+    });
   }
 }
 

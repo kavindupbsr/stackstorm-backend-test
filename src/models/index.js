@@ -12,6 +12,11 @@ const ProductImage = require('./ProductImage');
 const Review = require('./Review');
 const Wishlist = require('./Wishlist');
 const CartItem = require('./CartItem');
+const Order = require('./Order');
+const OrderItem = require('./OrderItem');
+const Payment = require('./Payment');
+const Return = require('./Return');
+const LoyaltyAccount = require('./LoyaltyAccount');
 
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfigs[env] || dbConfigs.development;
@@ -30,6 +35,11 @@ const models = {
   Review: Review.initModel(sequelize),
   Wishlist: Wishlist.initModel(sequelize),
   CartItem: CartItem.initModel(sequelize),
+  Order: Order.initModel(sequelize),
+  OrderItem: OrderItem.initModel(sequelize),
+  Payment: Payment.initModel(sequelize),
+  Return: Return.initModel(sequelize),
+  LoyaltyAccount: LoyaltyAccount.initModel(sequelize),
 };
 
 // Execute model associations
