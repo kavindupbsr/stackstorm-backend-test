@@ -184,6 +184,61 @@ const sendOrderConfirmation = async ({
 };
 
 /**
+ * Dispatches automated cancellation notice for expired unpaid orders.
+ *
+ * @param {object} params
+ * @param {object} params.order - Order instance or data
+ * @param {string} [params.reason='auto_cancelled_unpaid']
+ * @returns {Promise<object>} Dispatch summary
+ */
+const sendOrderCancellationNotice = async ({ order, reason = 'auto_cancelled_unpaid' }) => {
+  const targetEmail =
+    order.guest_email || (order.customer && order.customer.email) || 'customer@dickwella.lk';
+
+  const emailPayload = {
+    to: targetEmail,
+    from: DEFAULT_FROM,
+    subject: `Order Lapsed [${order.order_number}] - Dickwella Fashion Corner`,
+    html: `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 24px; color: #1e293b; background: #f8fafc;">
+        <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 32px;">
+          <h2 style="color: #dc2626; margin-top: 0;">Order Cancelled: Payment Window Expired</h2>
+          <p>Your order <strong>${order.order_number}</strong> was automatically cancelled because payment was not completed within the allowed 48-hour window.</p>
+          <p>Any temporarily reserved items have been released back to stock availability.</p>
+          <p style="color: #64748b; font-size: 13px;">Cancellation Reason: <code>${reason}</code></p>
+          <p>If you still wish to purchase these items, you are welcome to visit our website and place a new order at any time.</p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+          <small style="color: #94a3b8;">Dickwella Fashion Corner Support &bull; orders@dickwella.lk</small>
+        </div>
+      </div>
+    `,
+  };
+
+  dispatchedEmailsLog.push({
+    ...emailPayload,
+    orderId: order.id,
+    orderNumber: order.order_number,
+    reason,
+    timestamp: new Date().toISOString(),
+  });
+
+  if (process.env.NODE_ENV === 'test' || !SENDGRID_API_KEY) {
+    logger.info(
+      `[SendGrid Simulated] Cancellation notice dispatched to ${targetEmail} for order ${order.order_number}`
+    );
+    return { success: true, simulated: true, recipient: targetEmail };
+  }
+
+  try {
+    const [response] = await sgMail.send(emailPayload);
+    return { success: true, statusCode: response.statusCode, recipient: targetEmail };
+  } catch (err) {
+    logger.error(`[SendGrid Error] Failed to send cancellation email: ${err.message}`);
+    return { success: false, error: err.message, recipient: targetEmail };
+  }
+};
+
+/**
  * Clears recorded email dispatch logs (useful for unit test teardown).
  */
 const clearDispatchedLogs = () => {
@@ -199,6 +254,7 @@ const getLatestDispatchedEmail = () => {
 
 module.exports = {
   sendOrderConfirmation,
+  sendOrderCancellationNotice,
   generateInvoiceHtml,
   clearDispatchedLogs,
   getLatestDispatchedEmail,
