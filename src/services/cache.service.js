@@ -124,6 +124,20 @@ const invalidatePattern = async (pattern) => {
   }
 };
 
+/**
+ * Invalidates single product cache keys and all product catalog query patterns.
+ *
+ * @param {string} [productId] - Product UUID
+ * @returns {Promise<void>}
+ */
+const invalidateProductCaches = async (productId = null) => {
+  if (productId) {
+    await del(`cache:product:${productId}`);
+  }
+  await invalidatePattern('cache:product:*');
+  await invalidatePattern('cache:products:*');
+};
+
 module.exports = {
   get,
   set,
@@ -131,4 +145,5 @@ module.exports = {
   getOrSet,
   invalidatePattern,
   invalidate: invalidatePattern,
+  invalidateProductCaches,
 };
