@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const corsOptions = require('./config/cors');
+const { authLimiter } = require('./middleware/rateLimiter');
 const healthRoutes = require('./routes/health.routes');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
@@ -11,37 +13,44 @@ const ApiError = require('./utils/ApiError');
 
 const app = express();
 
-// Security HTTP headers
-app.use(helmet());
+// Trust reverse proxy (Nginx, Docker Compose, Cloudflare) for accurate client IP rate limiting
+app.set('trust proxy', 1);
 
-// CORS configuration
-const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:3000',
-  process.env.ADMIN_URL || 'http://localhost:3001',
-];
-
+// Security HTTP headers with explicit defense-in-depth policies
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (e.g., mobile apps, curl, postman) or matching origins
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
-        return callback(null, true);
-      }
-      return callback(new Error('Blocked by CORS policy'));
+  helmet({
+    frameguard: { action: 'deny' },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
   })
 );
+
+// Strict CORS configuration
+app.use(cors(corsOptions));
 
 // Body parsing middlewares
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Mount API routes
+// Mount API routes with tiered rate limiting
 app.use('/api/v1/health', healthRoutes);
-app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
 
