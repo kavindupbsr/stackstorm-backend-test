@@ -10,6 +10,7 @@ const inventoryRoutes = require('./routes/inventory.routes');
 const categoryRoutes = require('./routes/category.routes');
 const productRoutes = require('./routes/product.routes');
 const uploadRoutes = require('./routes/upload.routes');
+const cartRoutes = require('./routes/cart.routes');
 const { successResponse } = require('./utils/responseFormatter');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
@@ -66,6 +67,7 @@ app.get(['/', '/api/v1'], (req, res) => {
         auth: '/api/v1/auth',
         categories: '/api/v1/categories',
         products: '/api/v1/products',
+        cart: '/api/v1/cart',
         inventory: '/api/v1/inventory',
         admin: '/api/v1/admin',
         upload: '/api/v1/upload/images',
@@ -80,6 +82,7 @@ app.use('/api/v1/health', healthRoutes);
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/categories', categoryRoutes);
 app.use('/api/v1/products', productRoutes);
+app.use('/api/v1/cart', cartRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
