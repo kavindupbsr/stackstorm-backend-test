@@ -1,5 +1,6 @@
 const express = require('express');
 const productController = require('../controllers/product.controller');
+const reviewController = require('../controllers/review.controller');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const { ROLES } = require('../config/constants');
@@ -12,6 +13,20 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/', productController.getProducts);
+
+/**
+ * @route   POST /api/v1/products/:id/reviews
+ * @desc    Submit verified buyer review for a product (enforces delivered purchase gate)
+ * @access  Private (Authenticated Buyer)
+ */
+router.post('/:id/reviews', authenticate, reviewController.createReview);
+
+/**
+ * @route   GET /api/v1/products/:id/reviews
+ * @desc    Get reviews and rating summary for a product
+ * @access  Public
+ */
+router.get('/:id/reviews', reviewController.getProductReviews);
 
 /**
  * @route   PUT /api/v1/products/:id
