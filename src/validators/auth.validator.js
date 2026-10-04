@@ -52,7 +52,29 @@ const registerValidationRules = [
     .withMessage('Full name must be at least 2 characters long'),
 ];
 
+const loginValidationRules = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Must be a valid email address')
+    .normalizeEmail(),
+  body('password').notEmpty().withMessage('Password is required'),
+];
+
+const refreshTokenValidationRules = [
+  body('refreshToken')
+    .trim()
+    .notEmpty()
+    .withMessage('refreshToken is required')
+    .isString()
+    .withMessage('refreshToken must be a valid string'),
+];
+
 module.exports = {
   validate,
   registerValidationRules,
+  loginValidationRules,
+  refreshTokenValidationRules,
 };
