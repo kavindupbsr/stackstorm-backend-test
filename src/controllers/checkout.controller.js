@@ -1,5 +1,25 @@
+const checkoutService = require('../services/checkout.service');
 const reservationService = require('../services/reservation.service');
 const { successResponse } = require('../utils/responseFormatter');
+
+/**
+ * Initiates checkout for guest or registered customer.
+ * Creates order with pending status and locks temporary 15-minute stock hold.
+ */
+const initiate = async (req, res, next) => {
+  try {
+    const userId = req.user ? req.user.id : null;
+    const checkoutData = {
+      ...req.body,
+      userId,
+    };
+
+    const result = await checkoutService.initiateCheckout(checkoutData);
+    return successResponse(res, result, 'Checkout initiated successfully', 201);
+  } catch (error) {
+    return next(error);
+  }
+};
 
 /**
  * Initiates temporary 15-minute stock reservation during checkout.
@@ -50,6 +70,7 @@ const confirm = async (req, res, next) => {
 };
 
 module.exports = {
+  initiate,
   reserve,
   release,
   confirm,
