@@ -110,6 +110,17 @@ class ProductVariant extends Model {
       as: 'cartItems',
       onDelete: 'CASCADE',
     });
+
+    this.hasMany(models.OrderItem, {
+      foreignKey: 'product_variant_id',
+      as: 'orderItems',
+      onDelete: 'RESTRICT',
+    });
+
+    this.hasMany(models.Return, {
+      foreignKey: 'exchange_variant_id',
+      as: 'exchangeReturns',
+    });
   }
 }
 
