@@ -5,6 +5,10 @@ const { logger } = require('../config/logger');
 const User = require('./User');
 const CustomerProfile = require('./CustomerProfile');
 const Address = require('./Address');
+const Category = require('./Category');
+const Product = require('./Product');
+const ProductVariant = require('./ProductVariant');
+const ProductImage = require('./ProductImage');
 
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfigs[env] || dbConfigs.development;
@@ -16,6 +20,10 @@ const models = {
   User: User.initModel(sequelize),
   CustomerProfile: CustomerProfile.initModel(sequelize),
   Address: Address.initModel(sequelize),
+  Category: Category.initModel(sequelize),
+  Product: Product.initModel(sequelize),
+  ProductVariant: ProductVariant.initModel(sequelize),
+  ProductImage: ProductImage.initModel(sequelize),
 };
 
 // Execute model associations
