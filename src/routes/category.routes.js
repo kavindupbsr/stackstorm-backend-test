@@ -18,35 +18,20 @@ router.get('/', categoryController.getCategories);
  * @desc    Create a new category (Admin only) and invalidate category cache
  * @access  Private (Admin)
  */
-router.post(
-  '/',
-  authenticate,
-  authorize(ROLES.ADMIN),
-  categoryController.createCategory
-);
+router.post('/', authenticate, authorize(ROLES.ADMIN), categoryController.createCategory);
 
 /**
  * @route   PUT /api/v1/categories/:id
  * @desc    Update category (Admin only) and invalidate category cache
  * @access  Private (Admin)
  */
-router.put(
-  '/:id',
-  authenticate,
-  authorize(ROLES.ADMIN),
-  categoryController.updateCategory
-);
+router.put('/:id', authenticate, authorize(ROLES.ADMIN), categoryController.updateCategory);
 
 /**
  * @route   DELETE /api/v1/categories/:id
  * @desc    Delete category (Admin only) and invalidate category cache
  * @access  Private (Admin)
  */
-router.delete(
-  '/:id',
-  authenticate,
-  authorize(ROLES.ADMIN),
-  categoryController.deleteCategory
-);
+router.delete('/:id', authenticate, authorize(ROLES.ADMIN), categoryController.deleteCategory);
 
 module.exports = router;

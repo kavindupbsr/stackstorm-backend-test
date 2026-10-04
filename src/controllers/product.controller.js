@@ -63,11 +63,41 @@ const getProductBySlug = async (req, res, next) => {
       return errorResponse(res, `Product not found: ${slug}`, [], 404);
     }
 
-    return successResponse(
-      res,
-      product,
-      'Product details retrieved successfully'
-    );
+    return successResponse(res, product, 'Product details retrieved successfully');
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller for updating product details (Admin only) with cache eviction.
+ *
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware
+ */
+const updateProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updated = await productService.updateProduct(id, req.body);
+    return successResponse(res, updated, 'Product updated successfully', 200);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Controller for deleting a product (Admin only) with cache eviction.
+ *
+ * @param {import('express').Request} req - Express request object
+ * @param {import('express').Response} res - Express response object
+ * @param {import('express').NextFunction} next - Express next middleware
+ */
+const deleteProduct = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    await productService.deleteProduct(id);
+    return successResponse(res, null, 'Product deleted successfully', 200);
   } catch (error) {
     next(error);
   }
@@ -76,4 +106,6 @@ const getProductBySlug = async (req, res, next) => {
 module.exports = {
   getProducts,
   getProductBySlug,
+  updateProduct,
+  deleteProduct,
 };

@@ -1,5 +1,8 @@
 const express = require('express');
 const productController = require('../controllers/product.controller');
+const authenticate = require('../middleware/authenticate');
+const authorize = require('../middleware/authorize');
+const { ROLES } = require('../config/constants');
 
 const router = express.Router();
 
@@ -9,6 +12,20 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/', productController.getProducts);
+
+/**
+ * @route   PUT /api/v1/products/:id
+ * @desc    Update product details (Admin only) and evict cache
+ * @access  Private (Admin)
+ */
+router.put('/:id', authenticate, authorize(ROLES.ADMIN), productController.updateProduct);
+
+/**
+ * @route   DELETE /api/v1/products/:id
+ * @desc    Delete product (Admin only) and evict cache
+ * @access  Private (Admin)
+ */
+router.delete('/:id', authenticate, authorize(ROLES.ADMIN), productController.deleteProduct);
 
 /**
  * @route   GET /api/v1/products/:slug

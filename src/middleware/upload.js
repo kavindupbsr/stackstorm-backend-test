@@ -19,12 +19,7 @@ const fileFilter = (req, file, cb) => {
   if (file && ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(
-      ApiError.badRequest(
-        'Invalid file type. Only JPEG, PNG and WebP are allowed'
-      ),
-      false
-    );
+    cb(ApiError.badRequest('Invalid file type. Only JPEG, PNG and WebP are allowed'), false);
   }
 };
 

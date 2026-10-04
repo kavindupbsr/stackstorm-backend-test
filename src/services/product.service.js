@@ -1,6 +1,8 @@
 const { Op, Sequelize } = require('sequelize');
 const { Product, ProductVariant, ProductImage, Category, Review } = require('../models');
+const cacheService = require('./cache.service');
 const { logger } = require('../config/logger');
+const ApiError = require('../utils/ApiError');
 
 // Load fallback catalog items for resilience during offline/disconnected test and local dev environments
 let fallbackProductsData = [];
@@ -57,8 +59,7 @@ const getFallbackCatalog = () => {
       .filter((img) => img.product_id === prod.id)
       .sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
 
-    const primaryImage =
-      images.find((img) => img.is_primary) || images[0] || null;
+    const primaryImage = images.find((img) => img.is_primary) || images[0] || null;
 
     const reviews = fallbackReviewsData
       .filter((r) => r.product_id === prod.id)
@@ -73,18 +74,10 @@ const getFallbackCatalog = () => {
     const reviewCount = reviews.length;
     const averageRating =
       reviewCount > 0
-        ? Number(
-            (
-              reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-              reviewCount
-            ).toFixed(1)
-          )
+        ? Number((reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1))
         : 5.0;
 
-    const availableStock = variants.reduce(
-      (sum, v) => sum + v.available_stock,
-      0
-    );
+    const availableStock = variants.reduce((sum, v) => sum + v.available_stock, 0);
 
     return {
       id: prod.id,
@@ -120,10 +113,8 @@ const getFallbackCatalog = () => {
  */
 const filterFallbackCatalog = (params = {}) => {
   const catId = params.categoryId || params.category_id;
-  const minP =
-    params.minPrice !== undefined ? params.minPrice : params.min_price;
-  const maxP =
-    params.maxPrice !== undefined ? params.maxPrice : params.max_price;
+  const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
+  const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
   const { size, color, sort, page = 1, limit = 10, cursor } = params;
 
   let items = getFallbackCatalog().filter((p) => p.is_active);
@@ -145,19 +136,14 @@ const filterFallbackCatalog = (params = {}) => {
   if (size) {
     const targetSize = String(size).toUpperCase();
     items = items.filter((p) =>
-      p.variants.some(
-        (v) =>
-          String(v.size).toUpperCase() === targetSize && v.available_stock > 0
-      )
+      p.variants.some((v) => String(v.size).toUpperCase() === targetSize && v.available_stock > 0)
     );
   }
 
   if (color) {
     const targetColor = String(color).toLowerCase();
     items = items.filter((p) =>
-      p.variants.some((v) =>
-        String(v.color).toLowerCase().includes(targetColor)
-      )
+      p.variants.some((v) => String(v.color).toLowerCase().includes(targetColor))
     );
   }
 
@@ -167,24 +153,16 @@ const filterFallbackCatalog = (params = {}) => {
   } else if (sort === 'price_desc') {
     items.sort((a, b) => b.base_price - a.base_price);
   } else if (sort === 'newest') {
-    items.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   } else {
-    items.sort(
-      (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }
 
   // Keyset cursor handling
   if (cursor) {
     try {
       const decodedCursor = Buffer.from(cursor, 'base64').toString('utf8');
-      const cursorIndex = items.findIndex(
-        (p) => String(p.id) === decodedCursor
-      );
+      const cursorIndex = items.findIndex((p) => String(p.id) === decodedCursor);
       if (cursorIndex >= 0) {
         items = items.slice(cursorIndex + 1);
       }
@@ -204,9 +182,7 @@ const filterFallbackCatalog = (params = {}) => {
   const hasPrev = pageNum > 1;
   const lastItem = paginatedItems[paginatedItems.length - 1];
   const nextCursor =
-    hasNext && lastItem
-      ? Buffer.from(String(lastItem.id)).toString('base64')
-      : null;
+    hasNext && lastItem ? Buffer.from(String(lastItem.id)).toString('base64') : null;
 
   return {
     products: paginatedItems,
@@ -234,10 +210,8 @@ const filterFallbackCatalog = (params = {}) => {
  */
 const listProducts = async (params = {}) => {
   const catId = params.categoryId || params.category_id;
-  const minP =
-    params.minPrice !== undefined ? params.minPrice : params.min_price;
-  const maxP =
-    params.maxPrice !== undefined ? params.maxPrice : params.max_price;
+  const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
+  const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
   const { size, color, sort, page = 1, limit = 10, cursor } = params;
 
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -292,9 +266,7 @@ const listProducts = async (params = {}) => {
       variantWhere.size = size;
       requireVariantJoin = true;
       variantWhere[Op.and] = [
-        Sequelize.literal(
-          '"variants"."stock_quantity" - "variants"."reserved_quantity" > 0'
-        ),
+        Sequelize.literal('"variants"."stock_quantity" - "variants"."reserved_quantity" > 0'),
       ];
     }
 
@@ -369,10 +341,7 @@ const listProducts = async (params = {}) => {
         };
       });
 
-      const totalAvailable = variants.reduce(
-        (sum, v) => sum + v.available_stock,
-        0
-      );
+      const totalAvailable = variants.reduce((sum, v) => sum + v.available_stock, 0);
 
       return {
         ...plain,
@@ -385,9 +354,7 @@ const listProducts = async (params = {}) => {
 
     const lastItem = formattedProducts[formattedProducts.length - 1];
     const nextCursor =
-      hasNext && lastItem
-        ? Buffer.from(String(lastItem.id)).toString('base64')
-        : null;
+      hasNext && lastItem ? Buffer.from(String(lastItem.id)).toString('base64') : null;
 
     return {
       products: formattedProducts,
@@ -422,155 +389,227 @@ const listProducts = async (params = {}) => {
  */
 const getProductBySlug = async (slug) => {
   if (!slug) return null;
+  const cacheKey = `cache:product:slug:${slug}`;
 
-  try {
-    const product = await Product.findOne({
-      where: { slug, is_active: true },
-      include: [
-        {
-          model: Category,
-          as: 'category',
-        },
-        {
-          model: ProductVariant,
-          as: 'variants',
-        },
-        {
-          model: ProductImage,
-          as: 'images',
-        },
-        {
-          model: Review,
-          as: 'reviews',
-          required: false,
-        },
-      ],
-      order: [
-        [{ model: ProductImage, as: 'images' }, 'display_order', 'ASC'],
-      ],
-    });
-
-    if (product) {
-      const plain = product.get({ plain: true });
-      const images = (plain.images || []).sort(
-        (a, b) => (a.display_order || 0) - (b.display_order || 0)
-      );
-      const primaryImage =
-        images.find((img) => img.is_primary) || images[0] || null;
-
-      const variants = (plain.variants || []).map((v) => {
-        const stock = v.stock_quantity ?? 0;
-        const reserved = v.reserved_quantity ?? 0;
-        const available = Math.max(0, stock - reserved);
-        return {
-          ...v,
-          stock_quantity: stock,
-          reserved_quantity: reserved,
-          available_stock: available,
-          availableStock: available,
-        };
+  return cacheService.getOrSet(cacheKey, 3600, async () => {
+    try {
+      const product = await Product.findOne({
+        where: { slug, is_active: true },
+        include: [
+          {
+            model: Category,
+            as: 'category',
+          },
+          {
+            model: ProductVariant,
+            as: 'variants',
+          },
+          {
+            model: ProductImage,
+            as: 'images',
+          },
+          {
+            model: Review,
+            as: 'reviews',
+            required: false,
+          },
+        ],
+        order: [[{ model: ProductImage, as: 'images' }, 'display_order', 'ASC']],
       });
 
-      const reviews = plain.reviews || [];
-      const reviewCount = reviews.length;
-      const averageRating =
-        reviewCount > 0
-          ? Number(
-              (
-                reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-                reviewCount
-              ).toFixed(1)
-            )
-          : 5.0;
+      if (product) {
+        const plain = product.get({ plain: true });
+        const images = (plain.images || []).sort(
+          (a, b) => (a.display_order || 0) - (b.display_order || 0)
+        );
+        const primaryImage = images.find((img) => img.is_primary) || images[0] || null;
 
-      return {
-        ...plain,
-        base_price: Number(plain.base_price),
-        primary_image: primaryImage ? primaryImage.image_url : null,
-        images,
-        variants,
-        reviews,
-        review_count: reviewCount,
-        average_rating: averageRating,
-        availableStock: variants.reduce((sum, v) => sum + v.available_stock, 0),
-      };
+        const variants = (plain.variants || []).map((v) => {
+          const stock = v.stock_quantity ?? 0;
+          const reserved = v.reserved_quantity ?? 0;
+          const available = Math.max(0, stock - reserved);
+          return {
+            ...v,
+            stock_quantity: stock,
+            reserved_quantity: reserved,
+            available_stock: available,
+            availableStock: available,
+          };
+        });
+
+        const reviews = plain.reviews || [];
+        const reviewCount = reviews.length;
+        const averageRating =
+          reviewCount > 0
+            ? Number(
+                (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1)
+              )
+            : 5.0;
+
+        return {
+          ...plain,
+          base_price: Number(plain.base_price),
+          primary_image: primaryImage ? primaryImage.image_url : null,
+          images,
+          variants,
+          reviews,
+          review_count: reviewCount,
+          average_rating: averageRating,
+          availableStock: variants.reduce((sum, v) => sum + v.available_stock, 0),
+        };
+      }
+    } catch (error) {
+      logger.warn(
+        'Sequelize getProductBySlug failed, falling back to mock catalog:',
+        error.message
+      );
     }
-  } catch (error) {
-    logger.warn(
-      'Sequelize getProductBySlug failed, falling back to mock catalog:',
-      error.message
+
+    // Fallback catalog lookup
+    const catalog = getFallbackCatalog();
+    let item = catalog.find((p) => p.slug === slug);
+
+    // Support alias for classic-linen-batik-shirt
+    if (!item && slug === 'classic-linen-batik-shirt') {
+      const base = catalog.find((p) => p.slug === 'classic-batik-short-sleeve-shirt') || catalog[0];
+      if (base) {
+        item = {
+          ...base,
+          title: 'Classic Linen Batik Shirt',
+          slug: 'classic-linen-batik-shirt',
+        };
+      }
+    }
+
+    if (!item) {
+      return null;
+    }
+
+    const images = (item.images || []).sort(
+      (a, b) => (a.display_order || 0) - (b.display_order || 0)
     );
-  }
+    const primaryImage = images.find((img) => img.is_primary) || images[0] || null;
 
-  // Fallback catalog lookup
-  const catalog = getFallbackCatalog();
-  let item = catalog.find((p) => p.slug === slug);
-
-  // Support alias for classic-linen-batik-shirt
-  if (!item && slug === 'classic-linen-batik-shirt') {
-    const base =
-      catalog.find((p) => p.slug === 'classic-batik-short-sleeve-shirt') ||
-      catalog[0];
-    if (base) {
-      item = {
-        ...base,
-        title: 'Classic Linen Batik Shirt',
-        slug: 'classic-linen-batik-shirt',
+    const variants = (item.variants || []).map((v) => {
+      const stock = v.stock_quantity ?? v.stock ?? 0;
+      const reserved = v.reserved_quantity ?? 0;
+      const available = Math.max(0, stock - reserved);
+      return {
+        ...v,
+        stock_quantity: stock,
+        reserved_quantity: reserved,
+        available_stock: available,
+        availableStock: available,
       };
-    }
-  }
+    });
 
-  if (!item) {
-    return null;
-  }
+    const reviews = item.reviews || [];
+    const reviewCount = reviews.length;
+    const averageRating =
+      reviewCount > 0
+        ? Number((reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1))
+        : 5.0;
 
-  const images = (item.images || []).sort(
-    (a, b) => (a.display_order || 0) - (b.display_order || 0)
-  );
-  const primaryImage =
-    images.find((img) => img.is_primary) || images[0] || null;
-
-  const variants = (item.variants || []).map((v) => {
-    const stock = v.stock_quantity ?? v.stock ?? 0;
-    const reserved = v.reserved_quantity ?? 0;
-    const available = Math.max(0, stock - reserved);
     return {
-      ...v,
-      stock_quantity: stock,
-      reserved_quantity: reserved,
-      available_stock: available,
-      availableStock: available,
+      ...item,
+      base_price: Number(item.base_price),
+      primary_image: primaryImage ? primaryImage.image_url : null,
+      images,
+      variants,
+      reviews,
+      review_count: reviewCount,
+      average_rating: averageRating,
+      availableStock: variants.reduce((sum, v) => sum + v.available_stock, 0),
     };
   });
+};
 
-  const reviews = item.reviews || [];
-  const reviewCount = reviews.length;
-  const averageRating =
-    reviewCount > 0
-      ? Number(
-          (
-            reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
-            reviewCount
-          ).toFixed(1)
-        )
-      : 5.0;
+/**
+ * Invalidates all product and product catalog cache keys.
+ *
+ * @param {string} [id] - Specific product ID
+ * @param {string} [slug] - Specific product slug
+ */
+const invalidateProductCache = async (id = null, slug = null) => {
+  if (id) {
+    await cacheService.del(`cache:product:${id}`);
+  }
+  if (slug) {
+    await cacheService.del(`cache:product:slug:${slug}`);
+  }
+  await cacheService.invalidatePattern('cache:product:*');
+  await cacheService.invalidatePattern('cache:products:*');
+};
 
-  return {
-    ...item,
-    base_price: Number(item.base_price),
-    primary_image: primaryImage ? primaryImage.image_url : null,
-    images,
-    variants,
-    reviews,
-    review_count: reviewCount,
-    average_rating: averageRating,
-    availableStock: variants.reduce((sum, v) => sum + v.available_stock, 0),
-  };
+/**
+ * Updates an existing product and triggers cache invalidation.
+ *
+ * @param {string} id - Product UUID
+ * @param {object} updateData - Partial product fields to update
+ * @returns {Promise<object>} Updated product
+ */
+const updateProduct = async (id, updateData) => {
+  let slug = updateData.slug || null;
+
+  try {
+    const product = await Product.findByPk(id);
+    if (product) {
+      slug = slug || product.slug;
+      await product.update(updateData);
+      await invalidateProductCache(id, slug);
+      return product.get({ plain: true });
+    }
+  } catch (err) {
+    logger.warn(`Database product update failed: ${err.message}. Checking fallback.`);
+  }
+
+  const fallbackProd = fallbackProductsData.find((p) => p.id === id);
+  if (!fallbackProd) {
+    throw ApiError.notFound(`Product not found with ID ${id}`);
+  }
+  slug = slug || fallbackProd.slug;
+  Object.assign(fallbackProd, updateData);
+  await invalidateProductCache(id, slug);
+  return fallbackProd;
+};
+
+/**
+ * Deletes an existing product and triggers cache invalidation.
+ *
+ * @param {string} id - Product UUID
+ * @returns {Promise<boolean>}
+ */
+const deleteProduct = async (id) => {
+  let slug = null;
+
+  try {
+    const product = await Product.findByPk(id);
+    if (product) {
+      slug = product.slug;
+      await product.destroy();
+      await invalidateProductCache(id, slug);
+      return true;
+    }
+  } catch (err) {
+    logger.warn(`Database product delete failed: ${err.message}. Checking fallback.`);
+  }
+
+  const index = fallbackProductsData.findIndex((p) => p.id === id);
+  if (index === -1) {
+    throw ApiError.notFound(`Product not found with ID ${id}`);
+  }
+  slug = fallbackProductsData[index].slug;
+  fallbackProductsData.splice(index, 1);
+  await invalidateProductCache(id, slug);
+  return true;
 };
 
 module.exports = {
   listProducts,
   getProductBySlug,
+  updateProduct,
+  deleteProduct,
+  invalidateProductCache,
   getFallbackCatalog,
   filterFallbackCatalog,
 };

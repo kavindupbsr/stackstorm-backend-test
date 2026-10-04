@@ -1,5 +1,6 @@
 const { Category } = require('../models');
 const redisClient = require('../config/redis');
+const cacheService = require('./cache.service');
 const { logger } = require('../config/logger');
 const ApiError = require('../utils/ApiError');
 
@@ -111,6 +112,7 @@ const buildCategoryTree = (categories, parentId = null, visited = new Set()) => 
 const invalidateCategoryCache = async () => {
   try {
     await redisClient.del(CACHE_KEY);
+    await cacheService.invalidatePattern('cache:categories:*');
     logger.info(`Invalidated Redis category cache: ${CACHE_KEY}`);
     return true;
   } catch (err) {
@@ -149,7 +151,9 @@ const getCategoryTree = async () => {
         order: [['name', 'ASC']],
       });
     } catch (dbErr) {
-      logger.warn(`Database query failed in getCategoryTree: ${dbErr.message}. Utilizing fallback.`);
+      logger.warn(
+        `Database query failed in getCategoryTree: ${dbErr.message}. Utilizing fallback.`
+      );
       rawCategories = FALLBACK_CATEGORIES;
     }
 
@@ -209,14 +213,24 @@ const createCategory = async (categoryData) => {
  * @returns {Promise<object>}
  */
 const updateCategory = async (id, updateData) => {
-  const category = await Category.findByPk(id);
-  if (!category) {
-    throw ApiError.notFound(`Category not found with ID ${id}`);
+  try {
+    const category = await Category.findByPk(id);
+    if (category) {
+      await category.update(updateData);
+      await invalidateCategoryCache();
+      return category;
+    }
+  } catch (err) {
+    logger.warn(`Database category update failed: ${err.message}. Checking fallback.`);
   }
 
-  await category.update(updateData);
+  const fallbackCat = FALLBACK_CATEGORIES.find((c) => c.id === id);
+  if (!fallbackCat) {
+    throw ApiError.notFound(`Category not found with ID ${id}`);
+  }
+  Object.assign(fallbackCat, updateData);
   await invalidateCategoryCache();
-  return category;
+  return fallbackCat;
 };
 
 /**
@@ -226,12 +240,22 @@ const updateCategory = async (id, updateData) => {
  * @returns {Promise<boolean>}
  */
 const deleteCategory = async (id) => {
-  const category = await Category.findByPk(id);
-  if (!category) {
-    throw ApiError.notFound(`Category not found with ID ${id}`);
+  try {
+    const category = await Category.findByPk(id);
+    if (category) {
+      await category.destroy();
+      await invalidateCategoryCache();
+      return true;
+    }
+  } catch (err) {
+    logger.warn(`Database category delete failed: ${err.message}. Checking fallback.`);
   }
 
-  await category.destroy();
+  const index = FALLBACK_CATEGORIES.findIndex((c) => c.id === id);
+  if (index === -1) {
+    throw ApiError.notFound(`Category not found with ID ${id}`);
+  }
+  FALLBACK_CATEGORIES.splice(index, 1);
   await invalidateCategoryCache();
   return true;
 };

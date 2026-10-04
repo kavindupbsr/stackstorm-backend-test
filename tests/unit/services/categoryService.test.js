@@ -77,9 +77,7 @@ describe('Unit: Category Service & Sub-Tree Caching (STORM-018)', () => {
     });
 
     it('should serve directly from Redis on cache hit without database query', async () => {
-      const cachedTree = [
-        { id: 'c1', name: 'Cached Category', slug: 'cached', children: [] },
-      ];
+      const cachedTree = [{ id: 'c1', name: 'Cached Category', slug: 'cached', children: [] }];
       await redisClient.set(categoryService.CACHE_KEY, JSON.stringify(cachedTree));
 
       const dbSpy = jest.spyOn(Category, 'findAll');

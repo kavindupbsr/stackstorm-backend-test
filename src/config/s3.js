@@ -21,8 +21,7 @@ if (process.env.AWS_S3_ENDPOINT) {
 const s3Client = new S3Client(s3Config);
 const S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || 'stackstorm-assets';
 const CDN_BASE_URL =
-  process.env.CDN_BASE_URL ||
-  `https://${S3_BUCKET_NAME}.s3.${s3Config.region}.amazonaws.com`;
+  process.env.CDN_BASE_URL || `https://${S3_BUCKET_NAME}.s3.${s3Config.region}.amazonaws.com`;
 
 module.exports = {
   s3Client,

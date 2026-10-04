@@ -1,8 +1,4 @@
-const {
-  fileFilter,
-  ALLOWED_MIME_TYPES,
-  MAX_FILE_SIZE,
-} = require('../../../src/middleware/upload');
+const { fileFilter, ALLOWED_MIME_TYPES, MAX_FILE_SIZE } = require('../../../src/middleware/upload');
 
 describe('Unit: Upload MIME Filter & File Constraints (STORM-021)', () => {
   describe('fileFilter validation', () => {

@@ -40,7 +40,9 @@ const createLimiter = ({ windowMs, max, message, prefix }) => {
     skip: (req) => {
       // In automated test runs, skip rate limiting unless explicitly testing the rate limiter
       if (process.env.NODE_ENV === 'test') {
-        return process.env.TEST_RATE_LIMIT !== 'true' && req.headers['x-test-rate-limit'] !== 'true';
+        return (
+          process.env.TEST_RATE_LIMIT !== 'true' && req.headers['x-test-rate-limit'] !== 'true'
+        );
       }
       return false;
     },

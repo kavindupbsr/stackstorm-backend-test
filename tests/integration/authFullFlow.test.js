@@ -48,16 +48,16 @@ describe('Auth Full Lifecycle Integration', () => {
     jest.spyOn(User, 'findOne').mockResolvedValue(null);
     jest.spyOn(User, 'create').mockResolvedValue(mockUserInstance);
     jest.spyOn(CustomerProfile, 'create').mockResolvedValue({ id: 'prof-01', user_id: mockUserId });
-    jest.spyOn(LoyaltyAccount, 'create').mockResolvedValue({ customer_id: mockUserId, points_balance: 0 });
+    jest
+      .spyOn(LoyaltyAccount, 'create')
+      .mockResolvedValue({ customer_id: mockUserId, points_balance: 0 });
     jest.spyOn(sequelize, 'transaction').mockImplementation(async (cb) => cb({}));
 
-    const response = await request(app)
-      .post('/api/v1/auth/register')
-      .send({
-        email: testEmail,
-        password: testPassword,
-        fullName: 'Dickwella Full Flow Shopper',
-      });
+    const response = await request(app).post('/api/v1/auth/register').send({
+      email: testEmail,
+      password: testPassword,
+      fullName: 'Dickwella Full Flow Shopper',
+    });
 
     expect(response.status).toBe(201);
     expect(response.body.success).toBe(true);
@@ -68,12 +68,10 @@ describe('Auth Full Lifecycle Integration', () => {
   it('Login with credentials', async () => {
     jest.spyOn(User, 'findOne').mockResolvedValue(mockUserInstance);
 
-    const response = await request(app)
-      .post('/api/v1/auth/login')
-      .send({
-        email: testEmail,
-        password: testPassword,
-      });
+    const response = await request(app).post('/api/v1/auth/login').send({
+      email: testEmail,
+      password: testPassword,
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -100,11 +98,9 @@ describe('Auth Full Lifecycle Integration', () => {
   it('Refresh token rotation', async () => {
     jest.spyOn(User, 'findByPk').mockResolvedValue(mockUserInstance);
 
-    const response = await request(app)
-      .post('/api/v1/auth/refresh-token')
-      .send({
-        refreshToken: currentRefreshToken,
-      });
+    const response = await request(app).post('/api/v1/auth/refresh-token').send({
+      refreshToken: currentRefreshToken,
+    });
 
     expect(response.status).toBe(200);
     expect(response.body.success).toBe(true);
@@ -130,11 +126,9 @@ describe('Auth Full Lifecycle Integration', () => {
     expect(response.body.success).toBe(true);
 
     // Attempting to refresh with the revoked token must fail with 401
-    const rejectedRefresh = await request(app)
-      .post('/api/v1/auth/refresh-token')
-      .send({
-        refreshToken: currentRefreshToken,
-      });
+    const rejectedRefresh = await request(app).post('/api/v1/auth/refresh-token').send({
+      refreshToken: currentRefreshToken,
+    });
 
     expect(rejectedRefresh.status).toBe(401);
     expect(rejectedRefresh.body.success).toBe(false);
