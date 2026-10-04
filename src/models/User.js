@@ -98,6 +98,24 @@ class User extends Model {
       as: 'addresses',
       onDelete: 'CASCADE',
     });
+
+    this.hasMany(models.Review, {
+      foreignKey: 'user_id',
+      as: 'reviews',
+      onDelete: 'CASCADE',
+    });
+
+    this.hasMany(models.Wishlist, {
+      foreignKey: 'user_id',
+      as: 'wishlistItems',
+      onDelete: 'CASCADE',
+    });
+
+    this.hasMany(models.CartItem, {
+      foreignKey: 'user_id',
+      as: 'cartItems',
+      onDelete: 'CASCADE',
+    });
   }
 }
 
