@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const healthRoutes = require('./routes/health.routes');
+const authRoutes = require('./routes/auth.routes');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
 const ApiError = require('./utils/ApiError');
@@ -38,6 +39,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Mount API routes
 app.use('/api/v1/health', healthRoutes);
+app.use('/api/v1/auth', authRoutes);
 
 // Test routes for Shift-Left automated error handling validation
 if (process.env.NODE_ENV !== 'production') {
