@@ -48,20 +48,46 @@ Content-Type: application/json
 {
   "email": "customer.test@dickwellafashion.lk",
   "password": "Password123!",
-  "first_name": "Kasun",
-  "last_name": "Kalhara",
-  "phone": "+94771234567"
+  "fullName": "Kasun Kalhara"
 }
 
 ###
 
-### 8. User Login & Token Rotation (STORM-013)
+### 8. User Login (STORM-013)
+# @name login
 POST http://localhost:5000/api/v1/auth/login
 Content-Type: application/json
 
 {
   "email": "admin@dickwellafashion.lk",
   "password": "Password123!"
+}
+
+###
+
+### 8a. Retrieve Current Authenticated User (STORM-013)
+GET http://localhost:5000/api/v1/auth/me
+Authorization: Bearer {{login.response.body.data.accessToken}}
+Accept: application/json
+
+###
+
+### 8b. Refresh Token Rotation (STORM-013)
+POST http://localhost:5000/api/v1/auth/refresh-token
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.data.refreshToken}}"
+}
+
+###
+
+### 8c. Logout & Revoke Session (STORM-013)
+POST http://localhost:5000/api/v1/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.data.refreshToken}}"
 }
 
 ###

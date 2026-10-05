@@ -115,9 +115,18 @@ const filterFallbackCatalog = (params = {}) => {
   const catId = params.categoryId || params.category_id;
   const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
   const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
-  const { size, color, sort, page = 1, limit = 10, cursor } = params;
+  const { size, color, sort, search, page = 1, limit = 10, cursor } = params;
 
   let items = getFallbackCatalog().filter((p) => p.is_active);
+
+  if (search) {
+    const term = String(search).toLowerCase().trim();
+    items = items.filter(
+      (p) =>
+        (p.title && p.title.toLowerCase().includes(term)) ||
+        (p.description && p.description.toLowerCase().includes(term))
+    );
+  }
 
   if (catId) {
     items = items.filter((p) => String(p.category_id) === String(catId));
@@ -220,15 +229,34 @@ const listProducts = async (params = {}) => {
   const catId = params.categoryId || params.category_id;
   const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
   const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
-  const { size, color, sort, page = 1, limit = 10, cursor } = params;
+  const { size, color, sort, search, page = 1, limit = 10, cursor } = params;
 
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limitNum = Math.max(1, parseInt(limit, 10) || 10);
   const offset = (pageNum - 1) * limitNum;
 
+  // L2 Cache lookup via Redis
+  const cacheKey = `products:list:${Buffer.from(JSON.stringify(params)).toString('base64')}`;
+  try {
+    const cached = await cacheService.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  } catch (err) {
+    logger.warn('Cache lookup failed in listProducts:', err.message);
+  }
+
   try {
     // 1. Build product WHERE condition
     const productWhere = { is_active: true };
+
+    if (search) {
+      const searchTerm = `%${String(search).trim()}%`;
+      productWhere[Op.or] = [
+        { title: { [Op.iLike]: searchTerm } },
+        { description: { [Op.iLike]: searchTerm } },
+      ];
+    }
 
     if (cursor) {
       try {
@@ -376,7 +404,7 @@ const listProducts = async (params = {}) => {
     const nextCursor =
       hasNext && lastItem ? Buffer.from(String(lastItem.id)).toString('base64') : null;
 
-    return {
+    const result = {
       products: formattedProducts,
       pagination: {
         total,
@@ -392,6 +420,14 @@ const listProducts = async (params = {}) => {
       limit: limitNum,
       totalPages,
     };
+
+    try {
+      await cacheService.set(cacheKey, result, 60);
+    } catch (err) {
+      logger.warn('Redis cache set failed in listProducts:', err.message);
+    }
+
+    return result;
   } catch (error) {
     logger.warn(
       'Sequelize query failed or database offline, falling back to mock catalog:',

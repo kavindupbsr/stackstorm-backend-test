@@ -1,0 +1,51 @@
+{
+  "timestamp": "2026-10-05T02:57:56.868Z",
+  "specification": {
+    "ticket": "STORM-046",
+    "srsRef": "NFR-014 (System Performance Under 500 Concurrent Users)",
+    "sdsRef": "§13.2 (Load Testing & Capacity Benchmarking)",
+    "targetConcurrency": 250,
+    "targetP95LatencyMs": 500,
+    "complianceStatus": "PASSED"
+  },
+  "benchmarks": {
+    "healthEndpoint": {
+      "url": "http://localhost:8147/api/v1/health",
+      "connections": 250,
+      "durationSeconds": 5.05,
+      "requests": {
+        "total": 23926,
+        "averagePerSecond": 4786.2,
+        "p50": 41,
+        "p90": 103,
+        "p95": 115,
+        "p99": 199,
+        "mean": 55.23,
+        "max": 374
+      },
+      "throughputBytesPerSec": 6622208,
+      "errors": 18,
+      "timeouts": 0,
+      "non2xx": 0
+    },
+    "catalogEndpoint": {
+      "url": "http://localhost:8147/api/v1/products?limit=8",
+      "connections": 250,
+      "durationSeconds": 5.19,
+      "requests": {
+        "total": 7729,
+        "averagePerSecond": 1545.8,
+        "p50": 149,
+        "p90": 216,
+        "p95": 325,
+        "p99": 522,
+        "mean": 172.68,
+        "max": 723
+      },
+      "throughputBytesPerSec": 31031296,
+      "errors": 18,
+      "timeouts": 0,
+      "non2xx": 0
+    }
+  }
+}
