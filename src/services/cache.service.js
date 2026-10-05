@@ -1,21 +1,40 @@
 const redisClient = require('../config/redis');
 const { logger } = require('../config/logger');
 
+// Tier-1 In-Memory L1 Cache with LRU-style eviction and 5-second burst TTL
+const l1Cache = new Map();
+const L1_MAX_ITEMS = 500;
+const L1_TTL_MS = 5000;
+
 /**
- * Retrieves and deserializes a value from Redis cache.
+ * Retrieves and deserializes a value from L1/L2 Redis cache.
  *
  * @param {string} key - Cache key
  * @returns {Promise<any|null>} Deserialized data or null on miss/error
  */
 const get = async (key) => {
+  const l1Entry = l1Cache.get(key);
+  if (l1Entry && Date.now() - l1Entry.timestamp < L1_TTL_MS) {
+    return l1Entry.value;
+  }
+
   try {
     const raw = await redisClient.get(key);
     if (!raw) return null;
+    let parsed;
     try {
-      return JSON.parse(raw);
+      parsed = JSON.parse(raw);
     } catch {
-      return raw;
+      parsed = raw;
     }
+
+    if (l1Cache.size >= L1_MAX_ITEMS) {
+      const oldestKey = l1Cache.keys().next().value;
+      l1Cache.delete(oldestKey);
+    }
+    l1Cache.set(key, { value: parsed, timestamp: Date.now() });
+
+    return parsed;
   } catch (err) {
     logger.warn(`Redis get error for key "${key}": ${err.message}`);
     return null;
@@ -23,7 +42,7 @@ const get = async (key) => {
 };
 
 /**
- * Serializes and stores a value in Redis with a TTL in seconds.
+ * Serializes and stores a value in L1 memory and L2 Redis with a TTL in seconds.
  *
  * @param {string} key - Cache key
  * @param {any} value - Data to cache
@@ -32,6 +51,12 @@ const get = async (key) => {
  */
 const set = async (key, value, ttlSeconds = 3600) => {
   try {
+    if (l1Cache.size >= L1_MAX_ITEMS) {
+      const oldestKey = l1Cache.keys().next().value;
+      l1Cache.delete(oldestKey);
+    }
+    l1Cache.set(key, { value, timestamp: Date.now() });
+
     const serialized = typeof value === 'string' ? value : JSON.stringify(value);
     if (ttlSeconds && ttlSeconds > 0) {
       await redisClient.set(key, serialized, 'EX', ttlSeconds);
@@ -46,12 +71,18 @@ const set = async (key, value, ttlSeconds = 3600) => {
 };
 
 /**
- * Deletes a single key or array of keys from Redis.
+ * Deletes a single key or array of keys from L1 memory and L2 Redis.
  *
  * @param {string|string[]} key - Key or keys to delete
  * @returns {Promise<number>} Number of keys removed
  */
 const del = async (key) => {
+  if (Array.isArray(key)) {
+    key.forEach((k) => l1Cache.delete(k));
+  } else {
+    l1Cache.delete(key);
+  }
+
   try {
     return await redisClient.del(key);
   } catch (err) {
@@ -93,6 +124,18 @@ const getOrSet = async (key, ttlSeconds, fetcherFn) => {
  * @returns {Promise<number>} Total count of purged keys
  */
 const invalidatePattern = async (pattern) => {
+  // Purge matching keys from L1 in-memory cache
+  try {
+    const regexPattern = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`);
+    for (const k of l1Cache.keys()) {
+      if (regexPattern.test(k)) {
+        l1Cache.delete(k);
+      }
+    }
+  } catch (err) {
+    l1Cache.clear();
+  }
+
   let cursor = '0';
   let totalDeleted = 0;
 

@@ -8,6 +8,7 @@ module.exports = {
   testEnvironment: 'node',
   verbose: true,
   testTimeout: 15000,
+  testPathIgnorePatterns: ['/node_modules/', '/tests/e2e/'],
   clearMocks: true,
   restoreMocks: true,
   coverageDirectory: 'coverage',

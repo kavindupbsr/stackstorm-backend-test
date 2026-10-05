@@ -3,3 +3,4 @@ dist/
 coverage/
 logs/
 package-lock.json
+tests/load/k6-benchmark.js

@@ -8,8 +8,8 @@ const baseConfig = {
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
   pool: {
-    max: 20,
-    min: 5,
+    max: parseInt(process.env.DB_POOL_MAX || '20', 10),
+    min: parseInt(process.env.DB_POOL_MIN || '5', 10),
     acquire: 30000,
     idle: 10000,
   },
@@ -24,7 +24,7 @@ const config = {
   development: {
     ...baseConfig,
     database: process.env.DB_NAME || 'stackstorm_dev',
-    logging: (msg) => logger.debug(msg),
+    logging: process.env.DB_LOGGING === 'true' ? (msg) => logger.debug(msg) : false,
   },
   test: {
     ...baseConfig,

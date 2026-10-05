@@ -13,6 +13,7 @@
     "test": "jest --runInBand --forceExit",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
+    "test:load": "node tests/load/run-benchmark.js",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "sequelize-cli db:seed:all",
@@ -60,6 +61,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",
+    "autocannon": "^8.0.0",
     "eslint": "^8.57.1",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^10.1.8",
