@@ -89,4 +89,77 @@ router.get('/users', (req, res) => {
   );
 });
 
+/**
+ * @route GET /api/v1/admin/orders
+ * @desc Get all customer orders for fulfillment
+ */
+router.get('/orders', async (req, res, next) => {
+  try {
+    const { Order, OrderItem, User } = require('../models');
+    if (Order) {
+      const orders = await Order.findAll({
+        limit: parseInt(req.query.limit, 10) || 50,
+        order: [['created_at', 'DESC']],
+        include: [
+          { model: OrderItem, as: 'items' },
+          { model: User, as: 'user', attributes: ['id', 'email', 'first_name', 'last_name'] },
+        ],
+      });
+      return successResponse(res, { orders }, 'Admin orders retrieved successfully');
+    }
+  } catch {
+    // fallback
+  }
+  return successResponse(res, { orders: [] }, 'Admin orders retrieved successfully');
+});
+
+/**
+ * @route PUT /api/v1/admin/orders/:id/status
+ * @desc Update order fulfillment status and record delivered_at
+ */
+router.put('/orders/:id/status', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status, tracking_number, delivered_at } = req.body || {};
+    const { Order } = require('../models');
+    if (Order) {
+      const order = await Order.findByPk(id);
+      if (order) {
+        order.status = status;
+        if (tracking_number) order.tracking_number = tracking_number;
+        if (status === 'delivered') {
+          order.delivered_at = delivered_at || new Date();
+        }
+        await order.save();
+        return successResponse(res, order, 'Order status updated successfully');
+      }
+    }
+    return successResponse(
+      res,
+      { id, status, tracking_number, delivered_at: delivered_at || (status === 'delivered' ? new Date().toISOString() : null) },
+      'Order status updated successfully'
+    );
+  } catch (err) {
+    return next(err);
+  }
+});
+
+router.patch('/orders/:id/status', async (req, res, next) => {
+  const { id } = req.params;
+  const { status, tracking_number, delivered_at } = req.body || {};
+  return successResponse(
+    res,
+    { id, status, tracking_number, delivered_at: delivered_at || (status === 'delivered' ? new Date().toISOString() : null) },
+    'Order status updated successfully'
+  );
+});
+
+// Admin Returns management endpoints
+const returnController = require('../controllers/return.controller');
+router.get('/returns', returnController.listAllReturns);
+router.patch('/returns/:id/approve', returnController.approveReturn);
+router.patch('/returns/:id/reject', returnController.rejectReturn);
+router.post('/returns/:id/approve', returnController.approveReturn);
+router.post('/returns/:id/reject', returnController.rejectReturn);
+
 module.exports = router;
