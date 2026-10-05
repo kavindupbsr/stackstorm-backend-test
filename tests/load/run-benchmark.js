@@ -92,7 +92,9 @@ async function main() {
     );
 
     // Socket cooldown to allow Windows kernel to reclaim TIME_WAIT handles
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => {
+      setTimeout(r, 1500);
+    });
 
     console.log(`[STORM-046] Engine warm. Executing NFR-014 500-concurrency benchmark...`);
 
@@ -107,7 +109,9 @@ async function main() {
     );
 
     // Socket cooldown
-    await new Promise((r) => setTimeout(r, 1500));
+    await new Promise((r) => {
+      setTimeout(r, 1500);
+    });
 
     // Benchmark 2: Catalog Browsing & Search (Database & Cache Read Load - AC2)
     const catalogResult = await runSingleBenchmark(
