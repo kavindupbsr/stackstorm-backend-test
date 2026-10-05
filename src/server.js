@@ -11,9 +11,11 @@ const {
   startCancelUnpaidOrdersJob,
   stopCancelUnpaidOrdersJob,
 } = require('./jobs/cancelUnpaidOrders.job');
+const { initSocketServer, closeSocketServer } = require('./websocket/socketServer');
 
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
+initSocketServer(server);
 
 // Start HTTP server listener and connect to database
 if (process.env.NODE_ENV !== 'test') {
@@ -40,6 +42,7 @@ const gracefulShutdown = (signal) => {
   logger.info(`Received ${signal}. Starting graceful shutdown...`);
   stopReservationExpiryJob();
   stopCancelUnpaidOrdersJob();
+  closeSocketServer();
   server.close(async (err) => {
     if (err) {
       logger.error('Error during server close:', { error: err });
