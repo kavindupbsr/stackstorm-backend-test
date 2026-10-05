@@ -56,6 +56,11 @@ class Product extends Model {
           defaultValue: true,
           allowNull: false,
         },
+        is_final_sale: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
         availableStock: {
           type: DataTypes.VIRTUAL,
           get() {

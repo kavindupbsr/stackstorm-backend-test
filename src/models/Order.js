@@ -41,6 +41,10 @@ class Order extends Model {
             },
           },
         },
+        delivered_at: {
+          type: DataTypes.DATE,
+          allowNull: true,
+        },
         payment_status: {
           type: DataTypes.ENUM('pending', 'paid', 'failed', 'refunded'),
           defaultValue: 'pending',

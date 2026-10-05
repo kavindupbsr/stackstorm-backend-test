@@ -64,6 +64,11 @@ class OrderItem extends Model {
           type: DataTypes.STRING,
           allowNull: false,
         },
+        is_final_sale: {
+          type: DataTypes.BOOLEAN,
+          defaultValue: false,
+          allowNull: false,
+        },
       },
       {
         sequelize,
