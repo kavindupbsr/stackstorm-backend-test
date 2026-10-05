@@ -46,6 +46,32 @@ class LoyaltyAccount extends Model {
             },
           },
         },
+        annual_spend: {
+          type: DataTypes.DECIMAL(10, 2),
+          defaultValue: 0.0,
+          allowNull: false,
+          validate: {
+            min: {
+              args: [0],
+              msg: 'Annual spend cannot be negative',
+            },
+          },
+        },
+        consecutive_below_threshold_quarters: {
+          type: DataTypes.INTEGER,
+          defaultValue: 0,
+          allowNull: false,
+          validate: {
+            min: {
+              args: [0],
+              msg: 'Consecutive quarters counter cannot be negative',
+            },
+          },
+        },
+        last_audit_at: {
+          type: DataTypes.DATE,
+          allowNull: true,
+        },
       },
       {
         sequelize,
