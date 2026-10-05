@@ -73,6 +73,10 @@ class Return extends Model {
             },
           },
         },
+        return_label_url: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
       },
       {
         sequelize,
