@@ -11,6 +11,7 @@ const router = express.Router();
  * @access  Private (Authenticated Customer)
  */
 router.get('/my-orders', authenticate, orderController.getMyOrders);
+router.get('/', authenticate, orderController.getMyOrders);
 
 /**
  * @route   GET /api/v1/orders/:id/track
@@ -18,6 +19,7 @@ router.get('/my-orders', authenticate, orderController.getMyOrders);
  * @access  Private (Authenticated Customer)
  */
 router.get('/:id/track', authenticate, orderController.trackOrder);
+router.get('/:id/tracking', authenticate, orderController.trackOrder);
 
 /**
  * @route   GET /api/v1/orders/:id
