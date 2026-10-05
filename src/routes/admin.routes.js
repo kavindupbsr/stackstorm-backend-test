@@ -19,6 +19,7 @@ router.use(authorize(ROLES.ADMIN));
  * @access Private (Admin only)
  */
 router.get('/analytics/overview', analyticsController.getOverview);
+router.get('/analytics', analyticsController.getOverview);
 
 /**
  * @route GET /api/v1/admin/analytics/sales-trend
