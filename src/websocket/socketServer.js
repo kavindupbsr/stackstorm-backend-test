@@ -2,6 +2,7 @@ const { Server } = require('socket.io');
 const corsOptions = require('../config/cors');
 const { logger } = require('../config/logger');
 const socketAuth = require('./socketAuth');
+const registerChatHandlers = require('./chatHandler');
 
 let io = null;
 
@@ -51,6 +52,9 @@ const initSocketServer = (httpServer, customOptions = {}) => {
       socket.join(roleRoom);
       logger.debug(`[WEBSOCKET] Socket ${socket.id} joined room ${roleRoom}`);
     }
+
+    // Register live chat event listeners
+    registerChatHandlers(io, socket);
 
     socket.on('disconnect', (reason) => {
       logger.info(`[WEBSOCKET] Client disconnected: ${socket.id} (reason: ${reason})`);
