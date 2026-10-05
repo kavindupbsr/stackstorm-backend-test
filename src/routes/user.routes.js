@@ -13,15 +13,19 @@ router.use(authenticate);
  * @access  Private (Authenticated Customer)
  */
 router.get('/me', userController.getProfile);
+router.get('/profile', userController.getProfile);
 
 /**
  * @route   PUT /api/v1/users/me
  * @route   PATCH /api/v1/users/me
+ * @route   PUT /api/v1/users/profile
  * @desc    Update authenticated customer profile (phone number, marketing preferences)
  * @access  Private (Authenticated Customer)
  */
 router.put('/me', userController.updateProfile);
 router.patch('/me', userController.updateProfile);
+router.put('/profile', userController.updateProfile);
+router.patch('/profile', userController.updateProfile);
 
 /**
  * @route   GET /api/v1/users/addresses
