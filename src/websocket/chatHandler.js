@@ -1,4 +1,5 @@
 const ChatService = require('../services/chat.service');
+const ChatbotService = require('../services/chatbot.service');
 const { ChatSession } = require('../models');
 const { logger } = require('../config/logger');
 
@@ -101,6 +102,37 @@ const registerChatHandlers = (io, socket) => {
 
       if (typeof callback === 'function') {
         callback({ success: true, data: messagePayload });
+      }
+
+      // If customer sent message and no agent is assigned yet, invoke chatbot fallback
+      if (user.role === 'customer') {
+        const session = await ChatSession.findByPk(sessionId);
+        if (session && !session.agent_id) {
+          const botResult = await ChatbotService.generateReply(message);
+          if (botResult.isEscalation) {
+            session.subject = 'Human Escalation Requested';
+            await session.save();
+          }
+
+          const botMsg = await ChatService.saveMessage({
+            sessionId,
+            senderId: user.id,
+            senderRole: 'bot',
+            message: botResult.reply,
+          });
+
+          const botPayload = {
+            id: botMsg.id,
+            sessionId: botMsg.session_id,
+            senderId: botMsg.sender_id,
+            senderRole: 'bot',
+            message: botMsg.message,
+            createdAt: botMsg.created_at,
+            intent: botResult.intent,
+          };
+
+          io.to(`session:${sessionId}`).emit('chat:message', botPayload);
+        }
       }
     } catch (error) {
       logger.error(`[CHAT] Error handling chat message: ${error.message}`);

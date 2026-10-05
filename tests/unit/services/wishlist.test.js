@@ -1,3 +1,4 @@
+const { Wishlist } = require('../../../src/models');
 const wishlistService = require('../../../src/services/wishlist.service');
 
 describe('Unit: Wishlist Service & Shift-Left Logic (STORM-025)', () => {
@@ -5,12 +6,22 @@ describe('Unit: Wishlist Service & Shift-Left Logic (STORM-025)', () => {
   const mockProductId = 'c0000000-0000-0000-0000-000000000001';
   const secondMockProductId = 'c0000000-0000-0000-0000-000000000002';
 
-  beforeEach(() => {
+  beforeEach(async () => {
     wishlistService.resetFallbackStore();
+    try {
+      await Wishlist.destroy({ where: { user_id: mockUserId } });
+    } catch (_) {
+      // Ignore if offline
+    }
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     wishlistService.resetFallbackStore();
+    try {
+      await Wishlist.destroy({ where: { user_id: mockUserId } });
+    } catch (_) {
+      // Ignore if offline
+    }
   });
 
   describe('formatWishlistItem', () => {

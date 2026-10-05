@@ -4,7 +4,10 @@ const authenticate = require('../middleware/authenticate');
 
 const router = express.Router();
 
-// Enforce authentication on all chat endpoints
+// Public automated chatbot query endpoint
+router.post('/bot-query', ChatController.queryBot);
+
+// Authenticated session & history endpoints
 router.use(authenticate);
 
 router.get('/history', ChatController.getHistory);
