@@ -18,6 +18,8 @@ const Payment = require('./Payment');
 const Return = require('./Return');
 const LoyaltyAccount = require('./LoyaltyAccount');
 const InventoryLog = require('./InventoryLog');
+const ChatSession = require('./ChatSession');
+const ChatMessage = require('./ChatMessage');
 
 const env = process.env.NODE_ENV || 'development';
 const config = dbConfigs[env] || dbConfigs.development;
@@ -42,6 +44,8 @@ const models = {
   Return: Return.initModel(sequelize),
   LoyaltyAccount: LoyaltyAccount.initModel(sequelize),
   InventoryLog: InventoryLog.initModel(sequelize),
+  ChatSession: ChatSession.initModel(sequelize),
+  ChatMessage: ChatMessage.initModel(sequelize),
 };
 
 // Execute model associations

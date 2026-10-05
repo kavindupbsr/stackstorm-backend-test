@@ -19,6 +19,7 @@ const userRoutes = require('./routes/user.routes');
 const reviewRoutes = require('./routes/review.routes');
 const returnRoutes = require('./routes/return.routes');
 const loyaltyRoutes = require('./routes/loyalty.routes');
+const chatRoutes = require('./routes/chat.routes');
 const { successResponse } = require('./utils/responseFormatter');
 const notFoundHandler = require('./middleware/notFoundHandler');
 const errorHandler = require('./middleware/errorHandler');
@@ -92,6 +93,7 @@ app.get(['/', '/api/v1'], (req, res) => {
         reviews: '/api/v1/reviews',
         returns: '/api/v1/returns',
         loyalty: '/api/v1/loyalty',
+        chat: '/api/v1/chat/history',
         admin: '/api/v1/admin',
         upload: '/api/v1/upload/images',
       },
@@ -117,6 +119,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/inventory', inventoryRoutes);
 app.use('/api/v1/returns', returnRoutes);
 app.use('/api/v1/loyalty', loyaltyRoutes);
+app.use('/api/v1/chat', chatRoutes);
 
 // Test routes for Shift-Left automated error handling validation
 if (process.env.NODE_ENV !== 'production') {
