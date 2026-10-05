@@ -1,0 +1,92 @@
+{
+  "rules": [
+    {
+      "intent": "store_location",
+      "patterns": [
+        "where is your store",
+        "store location",
+        "where are you located",
+        "physical store",
+        "store address",
+        "shop location",
+        "outlet address",
+        "where to visit"
+      ],
+      "reply": "Our retail store is located at Main Street, Dickwella, Southern Province, Sri Lanka."
+    },
+    {
+      "intent": "store_hours",
+      "patterns": [
+        "opening hours",
+        "store hours",
+        "what time do you open",
+        "closing time",
+        "business hours",
+        "opening time",
+        "when are you open"
+      ],
+      "reply": "Dickwella Fashion Corner is open Monday through Saturday from 9:00 AM to 8:00 PM, and Sunday from 10:00 AM to 6:00 PM."
+    },
+    {
+      "intent": "return_policy",
+      "patterns": [
+        "return policy",
+        "how to return",
+        "exchange policy",
+        "how do i exchange",
+        "returns",
+        "exchange a size",
+        "return item",
+        "refund policy",
+        "can i return",
+        "exchange"
+      ],
+      "reply": "Dickwella Fashion Corner accepts returns and exchanges within 30 days of delivery. Items must be unworn with original tags attached. Final sale and clearance items are non-returnable."
+    },
+    {
+      "intent": "delivery_info",
+      "patterns": [
+        "delivery time",
+        "shipping time",
+        "how long does delivery take",
+        "islandwide delivery",
+        "shipping fee",
+        "delivery charges",
+        "courier service",
+        "shipping rates"
+      ],
+      "reply": "We provide islandwide delivery across Sri Lanka. Standard delivery within Western and Southern provinces takes 2-3 business days, and other provinces take 3-5 business days."
+    },
+    {
+      "intent": "payment_methods",
+      "patterns": [
+        "payment method",
+        "how can i pay",
+        "credit card",
+        "cash on delivery",
+        "cod",
+        "stripe",
+        "koko",
+        "payhere",
+        "accepted payment"
+      ],
+      "reply": "We accept Visa, MasterCard, Stripe, bank deposits, and Cash on Delivery (COD) for eligible apparel orders across Sri Lanka."
+    },
+    {
+      "intent": "human_escalation",
+      "patterns": [
+        "human",
+        "agent",
+        "talk to human",
+        "speak with agent",
+        "support representative",
+        "real person",
+        "customer care person",
+        "operator",
+        "escalate"
+      ],
+      "reply": "I am escalating your request to a live support agent. An agent will join this session shortly to assist you."
+    }
+  ],
+  "default_reply": "I am the Dickwella Fashion Corner automated assistant. You can ask me about our return policy, store location, opening hours, delivery times, or track an order by mentioning your order number (e.g. DFC-2026-104). Type 'human' to speak with an agent."
+}
