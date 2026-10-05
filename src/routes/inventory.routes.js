@@ -73,6 +73,7 @@ router.get('/logs', inventoryController.getAuditLogs);
  * @access Private (Admin and Inventory Staff)
  */
 router.post('/adjust-stock', inventoryController.adjustStockLegacy);
+router.post('/adjust', inventoryController.adjustStockLegacy);
 
 /**
  * @route GET /api/v1/inventory/status
