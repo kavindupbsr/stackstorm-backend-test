@@ -16,6 +16,7 @@ During system verification of the StackStorm E-Commerce Platform REST APIs via t
 4. **Registration Validation Key Mismatch**: The frontend registration form submitted `name` instead of `fullName`, causing `400 Bad Request ("Full name is required")` even when valid names were supplied.
 5. **Route Aliasing & Controller Discrepancies**: Discrepancies existed between Postman collection definitions and backend route specifications (e.g., `/categories/tree` vs `/categories`, `/reviews/product/:id` vs `/reviews/products/:id`, `/inventory/status` vs `/inventory`, `/chat/faq` vs `/chat/bot-query`).
 6. **Noisy Console Stack Traces**: Routine HTTP 4xx operational responses (such as 401s and 400s) logged full 15-line internal router stack traces to the console, making routine client errors appear as server crashes.
+7. **Product Filtering & Multi-Faceted Search Overhaul**: Frontend catalog filters (category slugs, price slider, size selection, color palette, customer rating sort) and text search were non-functional or returning 0 results due to parameter key discrepancies (`category` vs `category_id`), unhandled category slug resolution, unhandled parent-child category hierarchies in PostgreSQL, symbol lookup omissions in Sequelize `variantWhere`, and missing rating sort handling.
 
 All root causes were diagnosed, patched, linted, and verified.
 
@@ -74,6 +75,22 @@ All root causes were diagnosed, patched, linted, and verified.
   * **Chatbot Route:** Added `router.post('/faq', ChatController.queryBot)` alias in [src/routes/chat.routes.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/routes/chat.routes.js), and updated controller to accept either `message` or `question`.
   * **Inventory Adjustment:** In [src/controllers/inventory.controller.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/controllers/inventory.controller.js), supported both `delta` and `adjustment` keys. Added `router.get('/', ...)` alias for warehouse status in [src/routes/inventory.routes.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/routes/inventory.routes.js).
 
+### 2.7. Product Filtering, Hierarchical Categories & Multi-Faceted Search
+* **Problem:** In the customer storefront, clicking category navigation/pills (e.g., Men, Women, Batik Shirts), adjusting the price slider, clicking color swatches (e.g., Pure White, Kandyan Red, Ceylon Emerald), sorting by Customer Rating, or performing keyword search either failed to filter products or returned 0 results.
+* **Root Causes:**
+  1. **Parameter Name Mismatch**: The frontend sent `category`, `minPrice`/`max_price`, and `search`/`q`. [src/controllers/product.controller.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/controllers/product.controller.js) strictly expected `category_id: categoryId = req.query.category_id`, ignoring the frontend's category parameter completely.
+  2. **Hierarchical Categories & Slug vs UUID**: The frontend sent category slugs (e.g. `'men'`, `'women'`, `'batik-shirts'`) or `'all'`. In PostgreSQL, `category_id` is a UUID column, so passing a slug directly threw `invalid input syntax for type uuid` errors. Furthermore, products are assigned to **subcategories** (`Batik Shirts`, `Formal Trousers`, etc.) while navbar links pass parent slugs (`men`, `women`). Querying `WHERE category_id = Men_UUID` returned 0 products because parent categories do not have products directly attached without recursive child traversal.
+  3. **Sequelize Symbol Detection for Variant Filters**: In [src/services/product.service.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/services/product.service.js), variant filters checked `Object.keys(variantWhere).length > 0`. Because Sequelize operators like `Op.or` and `Op.and` are JavaScript **Symbols**, `Object.keys()` returned `0`, causing Sequelize to receive `where: undefined` and bypass variant filtering (such as color) entirely.
+  4. **Color Swatch Term Mismatch**: Frontend swatches use curated compound names (`Pure White`, `Kandyan Red`, `Ceylon Emerald`), whereas database variants store specific shades (`Optical White`, `Ivory White`, `Crimson Red`, `Emerald Green`).
+  5. **Narrow Search Scope**: Search previously only queried product `title` and `description` using `iLike`. Searching for category names (e.g. `"women"`, `"kids"`, `"saris"`, `"batik"`) or variant attributes returned 0 matches.
+  6. **Customer Rating Sort Unhandled**: The frontend sort option `rating` fell through unhandled in backend SQL ordering.
+* **Solutions Applied:**
+  1. **Flexible Controller Aliasing**: Updated [src/controllers/product.controller.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/controllers/product.controller.js) to accept aliases: `category` / `category_id` / `categoryId`, `min_price` / `minPrice`, `max_price` / `maxPrice`, `search` / `q` / `keyword`, and defaulted pagination `limit: 12`.
+  2. **Hierarchical Category Resolution**: In [src/services/product.service.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/services/product.service.js), added automatic slug and UUID resolution. If a category has child subcategories (such as `'men'` having Batik Shirts, Formal Trousers, Tees & Polos, Linen Shirts), it queries `category_id: { [Op.in]: [targetCat.id, ...childIds] }`. Bypassed category filtering when `category: 'all'` is passed. Mirrored identical resolution in `filterFallbackCatalog`.
+  3. **Multi-Field Intelligent Search**: Broadened search queries to match product `title`, `description`, associated `Category.name`/`slug`, and variant `sku`/`color`.
+  4. **Color Swatch Mapping & Symbol Support**: Mapped compound swatch terms to underlying color families, and replaced `Object.keys(variantWhere)` with `Reflect.ownKeys(variantWhere)` so Sequelize Symbols (`Op.or`, `Op.and`) are recognized.
+  5. **Rating Sort & Review Aggregates**: Added support for `sort=rating` using a SQL subquery for average ratings, and included hydrated `reviews`, `review_count`, and `rating` on all returned product objects.
+
 ---
 
 ## 3. Summary of Files Modified
@@ -94,6 +111,8 @@ All root causes were diagnosed, patched, linted, and verified.
 | `backend` | [src/controllers/chat.controller.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/controllers/chat.controller.js) | Accepted `message || question` body property in `queryBot` |
 | `backend` | [src/routes/inventory.routes.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/routes/inventory.routes.js) | Added root `GET /` alias route for inventory warehouse status |
 | `backend` | [src/controllers/inventory.controller.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/controllers/inventory.controller.js) | Accepted both `delta` and `adjustment` fields in `adjustStockLegacy` |
+| `backend` | [src/controllers/product.controller.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/controllers/product.controller.js) | Supported parameter aliases (`category`, `search`, `minPrice`/`maxPrice`), default limit 12 |
+| `backend` | [src/services/product.service.js](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/src/services/product.service.js) | Hierarchical category resolution, multi-field search, color mapping, `Reflect.ownKeys`, rating sort |
 | `backend` | [StackStorm_Postman_Collection.json](file:///c:/Users/ASUS%20TUF/Desktop/Design%20project/stackstorm-backend/StackStorm_Postman_Collection.json) | Updated valid catalog UUIDs, isolated admin/customer token variables, aligned route URLs |
 | `frontend` | `src/api/wishlist.api.js` | Added token presence guard to prevent unauthenticated guest network requests |
 | `frontend` | `src/components/auth/RegisterForm.jsx` | Updated submit payload to include `fullName` alongside `name` |
@@ -102,13 +121,22 @@ All root causes were diagnosed, patched, linted, and verified.
 
 ## 4. Verification & Test Audit
 
-Ran automated end-to-end collection test probe against live backend services:
+### 4.1. Postman End-to-End Suite:
 * **Total Endpoints Tested**: 38 requests across 13 modules
 * **Successful Operational Responses**: 35 / 38 (200 OK / 201 Created)
 * **Expected Business-Rule Guards**: 3 / 3
   1. `GET /orders/{{sampleOrderId}}/track` &rarr; `404 Not Found` (Requires an active placed order UUID)
   2. `POST /reviews` &rarr; `403 Forbidden` (`Only verified buyers with delivered orders can review this product` - anti-fraud guard)
   3. `POST /returns` &rarr; `404 Not Found` (Requires an existing delivered order item UUID)
+
+### 4.2. Product Catalog Search & Faceted Filtering Verification:
+* **Integration Tests**: `tests/integration/productListing.test.js` &rarr; 7 / 7 passed
+* **Unit Tests**: `tests/unit/services/productFilter.test.js` &rarr; 10 / 10 passed
+* **Live HTTP & Vite Proxy Verifications**:
+  * **Category hierarchy**: `category=men` (12 items across 4 subcategories), `category=women` (9 items across 4 subcategories), `category=kids` (2 items), `category=accessories` (2 items), `category=men-batik-shirts` (4 items)
+  * **Multi-field search**: `search=batik` (12 items), `search=sari` (9 items), `search=women` (9 items), `search=pants` (3 items)
+  * **Color swatches**: `color=Ocean Blue` (3 items), `color=Kandyan Red` (4 items), `color=Pure White` (2 items), `color=Ceylon Emerald` (4 items)
+  * **Price budget & sorting**: `max_price=5000` (10 items), `sort=price_asc` (lowest LKR 2,950 first), `sort=price_desc` (highest LKR 18,900 first), `sort=rating` (highest customer rating first)
 
 ---
 

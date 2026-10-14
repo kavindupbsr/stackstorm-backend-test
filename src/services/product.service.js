@@ -9,6 +9,7 @@ let fallbackProductsData = [];
 let fallbackVariantsData = [];
 let fallbackImagesData = [];
 let fallbackReviewsData = [];
+let fallbackCategoriesData = [];
 
 try {
   // eslint-disable-next-line global-require
@@ -33,6 +34,14 @@ try {
   fallbackReviewsData = demoEngagements.reviews || [];
 } catch (err) {
   logger.warn('Could not load demo-engagements seeder for fallback:', err.message);
+}
+
+try {
+  // eslint-disable-next-line global-require
+  const demoCategories = require('../seeders/20261004000001-demo-categories');
+  fallbackCategoriesData = demoCategories.categories || [];
+} catch (err) {
+  logger.warn('Could not load demo-categories seeder for fallback:', err.message);
 }
 
 /**
@@ -79,13 +88,17 @@ const getFallbackCatalog = () => {
 
     const availableStock = variants.reduce((sum, v) => sum + v.available_stock, 0);
 
+    const categoryObj = fallbackCategoriesData.find((c) => c.id === prod.category_id) || {
+      id: prod.category_id,
+      name: 'Apparel',
+      slug: 'apparel',
+    };
+
     return {
       id: prod.id,
       category_id: prod.category_id,
-      category: {
-        id: prod.category_id,
-        name: 'Apparel',
-      },
+      category: categoryObj,
+      category_name: categoryObj.name,
       title: prod.title,
       slug: prod.slug,
       description: prod.description,
@@ -98,6 +111,7 @@ const getFallbackCatalog = () => {
       reviews,
       review_count: reviewCount,
       average_rating: averageRating,
+      rating: averageRating,
       availableStock,
       created_at: prod.created_at || new Date('2026-10-01T00:00:00.000Z'),
       updated_at: prod.updated_at || new Date('2026-10-01T00:00:00.000Z'),
@@ -112,47 +126,97 @@ const getFallbackCatalog = () => {
  * @returns {object}
  */
 const filterFallbackCatalog = (params = {}) => {
-  const catId = params.categoryId || params.category_id;
-  const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
-  const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
-  const { size, color, sort, search, page = 1, limit = 10, cursor } = params;
+  const catParam = params.category || params.categoryId || params.category_id;
+  const minP =
+    params.minPrice !== undefined && params.minPrice !== '' && params.minPrice !== null
+      ? params.minPrice
+      : params.min_price;
+  const maxP =
+    params.maxPrice !== undefined && params.maxPrice !== '' && params.maxPrice !== null
+      ? params.maxPrice
+      : params.max_price;
+  const { size, color, sort, page = 1, limit = 12, cursor } = params;
+  const search = params.search || params.q || params.keyword;
 
   let items = getFallbackCatalog().filter((p) => p.is_active);
 
-  if (search) {
+  if (search && String(search).trim()) {
     const term = String(search).toLowerCase().trim();
     items = items.filter(
       (p) =>
         (p.title && p.title.toLowerCase().includes(term)) ||
-        (p.description && p.description.toLowerCase().includes(term))
+        (p.description && p.description.toLowerCase().includes(term)) ||
+        (p.category?.name && p.category.name.toLowerCase().includes(term)) ||
+        (p.category?.slug && p.category.slug.toLowerCase().includes(term)) ||
+        (p.variants &&
+          p.variants.some(
+            (v) =>
+              (v.color && v.color.toLowerCase().includes(term)) ||
+              (v.sku && v.sku.toLowerCase().includes(term))
+          ))
     );
   }
 
-  if (catId) {
-    items = items.filter((p) => String(p.category_id) === String(catId));
+  if (catParam && String(catParam).trim() && String(catParam).toLowerCase() !== 'all') {
+    const term = String(catParam).trim().toLowerCase();
+    const matchingCats = fallbackCategoriesData.filter(
+      (c) =>
+        c.id === term ||
+        c.slug === term ||
+        c.slug.includes(term) ||
+        (c.name && c.name.toLowerCase().includes(term))
+    );
+    const matchedIds = new Set(matchingCats.map((c) => c.id));
+    fallbackCategoriesData.forEach((c) => {
+      if (c.parent_id && matchedIds.has(c.parent_id)) {
+        matchedIds.add(c.id);
+      }
+    });
+
+    if (matchedIds.size > 0) {
+      items = items.filter((p) => matchedIds.has(p.category_id));
+    } else {
+      items = items.filter((p) => String(p.category_id) === String(catParam));
+    }
   }
 
   if (minP !== undefined && minP !== null && minP !== '') {
     const minVal = Number(minP);
-    items = items.filter((p) => p.base_price >= minVal);
+    if (!Number.isNaN(minVal)) {
+      items = items.filter((p) => p.base_price >= minVal);
+    }
   }
 
   if (maxP !== undefined && maxP !== null && maxP !== '') {
     const maxVal = Number(maxP);
-    items = items.filter((p) => p.base_price <= maxVal);
+    if (!Number.isNaN(maxVal)) {
+      items = items.filter((p) => p.base_price <= maxVal);
+    }
   }
 
-  if (size) {
-    const targetSize = String(size).toUpperCase();
+  if (size && String(size).trim()) {
+    const targetSize = String(size).trim().toUpperCase();
     items = items.filter((p) =>
       p.variants.some((v) => String(v.size).toUpperCase() === targetSize && v.available_stock > 0)
     );
   }
 
-  if (color) {
-    const targetColor = String(color).toLowerCase();
+  if (color && String(color).trim()) {
+    const rawColor = String(color).trim();
+    const lower = rawColor.toLowerCase();
+    const colorKeywords = [rawColor.toLowerCase()];
+    if (lower === 'pure white') colorKeywords.push('white');
+    if (lower === 'kandyan red') colorKeywords.push('red', 'maroon', 'ruby');
+    if (lower === 'ceylon emerald') colorKeywords.push('emerald', 'green', 'olive');
+    if (lower === 'ocean blue') colorKeywords.push('blue', 'ocean');
+    if (lower === 'indigo navy') colorKeywords.push('navy', 'indigo');
+    if (lower === 'earthy ochre') colorKeywords.push('ochre', 'yellow');
+
     items = items.filter((p) =>
-      p.variants.some((v) => String(v.color).toLowerCase().includes(targetColor))
+      p.variants.some((v) => {
+        const vCol = String(v.color || '').toLowerCase();
+        return colorKeywords.some((kw) => vCol.includes(kw));
+      })
     );
   }
 
@@ -161,10 +225,10 @@ const filterFallbackCatalog = (params = {}) => {
     items.sort((a, b) => a.base_price - b.base_price || String(a.id).localeCompare(String(b.id)));
   } else if (sort === 'price_desc') {
     items.sort((a, b) => b.base_price - a.base_price || String(a.id).localeCompare(String(b.id)));
-  } else if (sort === 'newest') {
+  } else if (sort === 'rating') {
     items.sort(
       (a, b) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime() ||
+        (b.average_rating || 5) - (a.average_rating || 5) ||
         String(a.id).localeCompare(String(b.id))
     );
   } else {
@@ -190,7 +254,7 @@ const filterFallbackCatalog = (params = {}) => {
 
   const total = items.length;
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
-  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 12);
   const totalPages = Math.ceil(total / limitNum) || 1;
   const offset = (pageNum - 1) * limitNum;
   const paginatedItems = items.slice(offset, offset + limitNum);
@@ -226,13 +290,34 @@ const filterFallbackCatalog = (params = {}) => {
  * @returns {Promise<object>} Paginated products response
  */
 const listProducts = async (params = {}) => {
-  const catId = params.categoryId || params.category_id;
-  const minP = params.minPrice !== undefined ? params.minPrice : params.min_price;
-  const maxP = params.maxPrice !== undefined ? params.maxPrice : params.max_price;
-  const { size, color, sort, search, page = 1, limit = 10, cursor } = params;
+  const catParam = params.category || params.categoryId || params.category_id;
+  let minP;
+  if (params.minPrice !== undefined && params.minPrice !== '' && params.minPrice !== null) {
+    minP = Number(params.minPrice);
+  } else if (
+    params.min_price !== undefined &&
+    params.min_price !== '' &&
+    params.min_price !== null
+  ) {
+    minP = Number(params.min_price);
+  }
+
+  let maxP;
+  if (params.maxPrice !== undefined && params.maxPrice !== '' && params.maxPrice !== null) {
+    maxP = Number(params.maxPrice);
+  } else if (
+    params.max_price !== undefined &&
+    params.max_price !== '' &&
+    params.max_price !== null
+  ) {
+    maxP = Number(params.max_price);
+  }
+
+  const { size, color, sort, page = 1, limit = 12, cursor } = params;
+  const search = params.search || params.q || params.keyword;
 
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
-  const limitNum = Math.max(1, parseInt(limit, 10) || 10);
+  const limitNum = Math.max(1, parseInt(limit, 10) || 12);
   const offset = (pageNum - 1) * limitNum;
 
   // L2 Cache lookup via Redis
@@ -250,12 +335,67 @@ const listProducts = async (params = {}) => {
     // 1. Build product WHERE condition
     const productWhere = { is_active: true };
 
-    if (search) {
-      const searchTerm = `%${String(search).trim()}%`;
-      productWhere[Op.or] = [
+    if (search && String(search).trim()) {
+      const rawSearch = String(search).trim();
+      const searchTerm = `%${rawSearch}%`;
+
+      // Find any categories matching the search term to include products in those categories
+      const matchedCategoryIds = [];
+      try {
+        const matchedCategories = await Category.findAll({
+          where: {
+            [Op.or]: [
+              { name: { [Op.iLike]: searchTerm } },
+              { slug: { [Op.iLike]: searchTerm } },
+              { description: { [Op.iLike]: searchTerm } },
+            ],
+            is_active: true,
+          },
+          include: [{ model: Category, as: 'children', attributes: ['id'] }],
+          attributes: ['id'],
+        });
+
+        matchedCategories.forEach((cat) => {
+          matchedCategoryIds.push(cat.id);
+          (cat.children || []).forEach((ch) => matchedCategoryIds.push(ch.id));
+        });
+      } catch (catSearchErr) {
+        logger.warn('Category search lookup failed in listProducts:', catSearchErr.message);
+      }
+
+      const orConditions = [
         { title: { [Op.iLike]: searchTerm } },
         { description: { [Op.iLike]: searchTerm } },
       ];
+
+      if (matchedCategoryIds.length > 0) {
+        orConditions.push({
+          category_id: { [Op.in]: Array.from(new Set(matchedCategoryIds)) },
+        });
+      }
+
+      // Check if search matches any variant SKU or color
+      try {
+        const matchedVariants = await ProductVariant.findAll({
+          where: {
+            [Op.or]: [
+              { sku: { [Op.iLike]: searchTerm } },
+              { color: { [Op.iLike]: searchTerm } },
+            ],
+          },
+          attributes: ['product_id'],
+          limit: 50,
+        });
+
+        if (matchedVariants.length > 0) {
+          const prodIds = Array.from(new Set(matchedVariants.map((v) => v.product_id)));
+          orConditions.push({ id: { [Op.in]: prodIds } });
+        }
+      } catch (varSearchErr) {
+        logger.warn('Variant search lookup failed in listProducts:', varSearchErr.message);
+      }
+
+      productWhere[Op.or] = orConditions;
     }
 
     if (cursor) {
@@ -269,28 +409,64 @@ const listProducts = async (params = {}) => {
       }
     }
 
-    if (catId) {
-      productWhere.category_id = catId;
+    if (catParam && String(catParam).trim() && String(catParam).toLowerCase() !== 'all') {
+      const trimmedCat = String(catParam).trim();
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmedCat);
+
+      let targetCategory = null;
+      if (isUUID) {
+        targetCategory = await Category.findByPk(trimmedCat, {
+          include: [{ model: Category, as: 'children', attributes: ['id'] }],
+        });
+      } else {
+        // Query by slug or name (case-insensitive)
+        targetCategory = await Category.findOne({
+          where: {
+            [Op.or]: [
+              { slug: trimmedCat.toLowerCase() },
+              { name: { [Op.iLike]: trimmedCat } },
+            ],
+            is_active: true,
+          },
+          include: [{ model: Category, as: 'children', attributes: ['id'] }],
+        });
+      }
+
+      if (targetCategory) {
+        const childIds = (targetCategory.children || []).map((c) => c.id);
+        const allCategoryIds = [targetCategory.id, ...childIds];
+        productWhere.category_id = { [Op.in]: allCategoryIds };
+      } else if (isUUID) {
+        productWhere.category_id = trimmedCat;
+      } else {
+        // Partial slug match (e.g. 'batik' matches 'men-batik-shirts')
+        const matchedCats = await Category.findAll({
+          where: {
+            slug: { [Op.iLike]: `%${trimmedCat}%` },
+            is_active: true,
+          },
+          attributes: ['id'],
+        });
+        if (matchedCats.length > 0) {
+          productWhere.category_id = { [Op.in]: matchedCats.map((c) => c.id) };
+        } else {
+          // If no category matched this slug, safely return empty result
+          productWhere.category_id = '00000000-0000-0000-0000-000000000000';
+        }
+      }
     }
 
-    if (
-      minP !== undefined &&
-      minP !== null &&
-      minP !== '' &&
-      maxP !== undefined &&
-      maxP !== null &&
-      maxP !== ''
-    ) {
+    if (minP !== undefined && !Number.isNaN(minP) && maxP !== undefined && !Number.isNaN(maxP)) {
       productWhere.base_price = {
-        [Op.between]: [Number(minP), Number(maxP)],
+        [Op.between]: [minP, maxP],
       };
-    } else if (minP !== undefined && minP !== null && minP !== '') {
+    } else if (minP !== undefined && !Number.isNaN(minP)) {
       productWhere.base_price = {
-        [Op.gte]: Number(minP),
+        [Op.gte]: minP,
       };
-    } else if (maxP !== undefined && maxP !== null && maxP !== '') {
+    } else if (maxP !== undefined && !Number.isNaN(maxP)) {
       productWhere.base_price = {
-        [Op.lte]: Number(maxP),
+        [Op.lte]: maxP,
       };
     }
 
@@ -298,18 +474,28 @@ const listProducts = async (params = {}) => {
     const variantWhere = {};
     let requireVariantJoin = false;
 
-    if (size) {
-      variantWhere.size = size;
+    if (size && String(size).trim()) {
+      variantWhere.size = String(size).trim().toUpperCase();
       requireVariantJoin = true;
       variantWhere[Op.and] = [
         Sequelize.literal('"variants"."stock_quantity" - "variants"."reserved_quantity" > 0'),
       ];
     }
 
-    if (color) {
-      variantWhere.color = {
-        [Op.iLike]: `%${color}%`,
-      };
+    if (color && String(color).trim()) {
+      const rawColor = String(color).trim();
+      const lower = rawColor.toLowerCase();
+      const colorKeywords = [rawColor];
+      if (lower === 'pure white') colorKeywords.push('White');
+      if (lower === 'kandyan red') colorKeywords.push('Red', 'Maroon', 'Ruby');
+      if (lower === 'ceylon emerald') colorKeywords.push('Emerald', 'Green', 'Olive');
+      if (lower === 'ocean blue') colorKeywords.push('Blue', 'Ocean');
+      if (lower === 'indigo navy') colorKeywords.push('Navy', 'Indigo');
+      if (lower === 'earthy ochre') colorKeywords.push('Ochre', 'Yellow');
+
+      variantWhere[Op.or] = colorKeywords.map((kw) => ({
+        color: { [Op.iLike]: `%${kw}%` },
+      }));
       requireVariantJoin = true;
     }
 
@@ -333,6 +519,16 @@ const listProducts = async (params = {}) => {
         ['created_at', 'DESC'],
         ['id', 'ASC'],
       ];
+    } else if (sort === 'rating') {
+      order = [
+        [
+          Sequelize.literal(
+            '(SELECT COALESCE(AVG(rating), 5.0) FROM reviews WHERE reviews.product_id = "Product"."id")'
+          ),
+          'DESC',
+        ],
+        ['id', 'ASC'],
+      ];
     }
 
     // 4. Query PostgreSQL with eager loading
@@ -343,7 +539,7 @@ const listProducts = async (params = {}) => {
         {
           model: ProductVariant,
           as: 'variants',
-          where: Object.keys(variantWhere).length > 0 ? variantWhere : undefined,
+          where: Reflect.ownKeys(variantWhere).length > 0 ? variantWhere : undefined,
           required: requireVariantJoin,
         },
         {
@@ -354,6 +550,12 @@ const listProducts = async (params = {}) => {
         {
           model: Category,
           as: 'category',
+          required: false,
+        },
+        {
+          model: Review,
+          as: 'reviews',
+          attributes: ['id', 'rating', 'comment', 'is_verified_purchase', 'created_at'],
           required: false,
         },
       ],
@@ -367,7 +569,7 @@ const listProducts = async (params = {}) => {
     const hasNext = pageNum < totalPages;
     const hasPrev = pageNum > 1;
 
-    // 5. Format product response with primary_image and availableStock
+    // 5. Format product response with primary_image, availableStock, reviews & ratings
     const formattedProducts = rows.map((prod) => {
       const plain = prod.get({ plain: true });
       const images = plain.images || [];
@@ -391,12 +593,23 @@ const listProducts = async (params = {}) => {
 
       const totalAvailable = variants.reduce((sum, v) => sum + v.available_stock, 0);
 
+      const reviews = plain.reviews || [];
+      const reviewCount = reviews.length;
+      const averageRating =
+        reviewCount > 0
+          ? Number((reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviewCount).toFixed(1))
+          : 5.0;
+
       return {
         ...plain,
         base_price: Number(plain.base_price),
         primary_image: primaryImage ? primaryImage.image_url : null,
         variants,
         availableStock: totalAvailable,
+        reviews,
+        review_count: reviewCount,
+        average_rating: averageRating,
+        rating: averageRating,
       };
     });
 

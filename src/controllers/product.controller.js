@@ -10,21 +10,25 @@ const { successResponse, errorResponse } = require('../utils/responseFormatter')
  */
 const getProducts = async (req, res, next) => {
   try {
+    const categoryParam =
+      req.query.category_id || req.query.categoryId || req.query.category;
+    const minPrice =
+      req.query.min_price !== undefined ? req.query.min_price : req.query.minPrice;
+    const maxPrice =
+      req.query.max_price !== undefined ? req.query.max_price : req.query.maxPrice;
+    const search = req.query.search || req.query.q || req.query.keyword;
     const {
-      category_id: categoryId,
-      min_price: minPrice,
-      max_price: maxPrice,
       size,
       color,
       sort,
-      search,
       page = 1,
-      limit = 10,
+      limit = 12,
       cursor,
     } = req.query;
 
     const result = await productService.listProducts({
-      categoryId,
+      category: categoryParam,
+      categoryId: categoryParam,
       minPrice,
       maxPrice,
       size,
