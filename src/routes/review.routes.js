@@ -27,5 +27,6 @@ router.post('/', authenticate, (req, res, next) => {
  * @access  Public
  */
 router.get('/products/:id', reviewController.getProductReviews);
+router.get('/product/:id', reviewController.getProductReviews);
 
 module.exports = router;

@@ -16,9 +16,9 @@ class ChatController {
    */
   static async queryBot(req, res, next) {
     try {
-      const { message } = req.body;
+      const message = req.body?.message || req.body?.question;
       if (!message || typeof message !== 'string') {
-        throw ApiError.badRequest('Message is required');
+        throw ApiError.badRequest('Message or question is required');
       }
 
       const botReply = await ChatbotService.generateReply(message);

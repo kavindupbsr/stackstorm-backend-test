@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Public automated chatbot query endpoint
 router.post('/bot-query', ChatController.queryBot);
+router.post('/faq', ChatController.queryBot);
 
 // Authenticated session & history endpoints
 router.use(authenticate);

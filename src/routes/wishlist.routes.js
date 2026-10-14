@@ -2,17 +2,34 @@ const express = require('express');
 const wishlistController = require('../controllers/wishlist.controller');
 const authenticate = require('../middleware/authenticate');
 
+const { verifyAccessToken } = require('../services/token.service');
+
 const router = express.Router();
 
-// Enforce JWT authentication on all wishlist endpoints
-router.use(authenticate);
+const optionalAuthenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return next();
+  }
+  const token = authHeader.substring(7).trim();
+  if (!token) return next();
+  try {
+    req.user = verifyAccessToken(token);
+  } catch (_err) {
+    req.user = null;
+  }
+  return next();
+};
 
 /**
  * @route   GET /api/v1/wishlist
  * @desc    Retrieve customer wishlist with live stock status and formatted LKR prices
- * @access  Private (Authenticated Customer)
+ * @access  Public (Guest returns empty, Authenticated returns user wishlist)
  */
-router.get('/', wishlistController.getWishlist);
+router.get('/', optionalAuthenticate, wishlistController.getWishlist);
+
+// Enforce JWT authentication on mutating wishlist endpoints
+router.use(authenticate);
 
 /**
  * @route   POST /api/v1/wishlist

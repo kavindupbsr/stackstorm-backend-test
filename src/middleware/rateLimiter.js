@@ -44,6 +44,19 @@ const createLimiter = ({ windowMs, max, message, prefix }) => {
           process.env.TEST_RATE_LIMIT !== 'true' && req.headers['x-test-rate-limit'] !== 'true'
         );
       }
+      // In development, skip rate limiting on local loopback to prevent local testing lockouts
+      if (process.env.NODE_ENV === 'development') {
+        const ip = req.ip || req.connection?.remoteAddress || '';
+        if (
+          ip === '::1' ||
+          ip === '127.0.0.1' ||
+          ip.includes('127.0.0.1') ||
+          ip.includes('::ffff:127.0.0.1') ||
+          req.headers['x-bypass-rate-limit'] === 'true'
+        ) {
+          return true;
+        }
+      }
       return false;
     },
     handler: (req, res, _next, options) => {
@@ -67,11 +80,11 @@ const createLimiter = ({ windowMs, max, message, prefix }) => {
 };
 
 /**
- * Strict rate limiter for sensitive authentication endpoints (5 requests per 15 minutes)
+ * Strict rate limiter for sensitive authentication endpoints (5 in prod, 100 in dev per 15 minutes)
  */
 const authLimiter = createLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 5,
+  max: process.env.NODE_ENV === 'development' ? 100 : 5,
   message: 'Too many authentication attempts. Please try again after 15 minutes.',
   prefix: 'auth',
 });

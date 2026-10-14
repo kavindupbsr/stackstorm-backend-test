@@ -6,7 +6,8 @@ const { successResponse } = require('../utils/responseFormatter');
  */
 const register = async (req, res, next) => {
   try {
-    const { email, password, fullName, phone, marketingOptIn } = req.body;
+    const { email, password, phone, marketingOptIn } = req.body;
+    const fullName = req.body.fullName || req.body.name;
     const result = await authService.register({
       email,
       password,

@@ -3,6 +3,8 @@ const loyaltyController = require('../controllers/loyalty.controller');
 const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const { ROLES } = require('../config/constants');
+const { successResponse } = require('../utils/responseFormatter');
+const { LoyaltyAccount, User } = require('../models');
 
 const router = express.Router();
 
@@ -12,6 +14,7 @@ const router = express.Router();
  * @access  Private (Authenticated Customer)
  */
 router.get('/my-account', authenticate, loyaltyController.getMyAccount);
+router.get('/', authenticate, loyaltyController.getMyAccount);
 
 /**
  * @route   POST /api/v1/loyalty/redeem
@@ -41,12 +44,13 @@ router.get(
   '/accounts',
   authenticate,
   authorize(ROLES.ADMIN, ROLES.MANAGER, ROLES.SUPPORT),
-  async (req, res, next) => {
+  async (req, res) => {
     try {
-      const { LoyaltyAccount, User } = require('../models');
       if (LoyaltyAccount) {
         const accounts = await LoyaltyAccount.findAll({
-          include: [{ model: User, as: 'user', attributes: ['id', 'email', 'first_name', 'last_name'] }],
+          include: [
+            { model: User, as: 'user', attributes: ['id', 'email', 'first_name', 'last_name'] },
+          ],
         });
         return successResponse(res, { accounts }, 'Loyalty accounts retrieved successfully');
       }
@@ -69,7 +73,6 @@ router.post(
   async (req, res, next) => {
     try {
       const { customerId, pointsDelta, reason, notes } = req.body || {};
-      const { LoyaltyAccount } = require('../models');
       if (LoyaltyAccount) {
         const account = await LoyaltyAccount.findOne({ where: { user_id: customerId } });
         if (account) {
@@ -78,7 +81,11 @@ router.post(
           return successResponse(res, account, 'Points adjusted successfully');
         }
       }
-      return successResponse(res, { customerId, pointsDelta, reason, notes }, 'Points adjusted successfully');
+      return successResponse(
+        res,
+        { customerId, pointsDelta, reason, notes },
+        'Points adjusted successfully'
+      );
     } catch (err) {
       return next(err);
     }
@@ -90,6 +97,11 @@ router.post(
  * @desc    Trigger quarterly audit sweep enforcing 2-quarter grace period
  * @access  Private (Admin)
  */
-router.post('/audit', authenticate, authorize(ROLES.ADMIN), loyaltyController.triggerQuarterlyAudit);
+router.post(
+  '/audit',
+  authenticate,
+  authorize(ROLES.ADMIN),
+  loyaltyController.triggerQuarterlyAudit
+);
 
 module.exports = router;

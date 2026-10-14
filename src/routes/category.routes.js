@@ -12,6 +12,7 @@ const router = express.Router();
  * @access  Public
  */
 router.get('/', categoryController.getCategories);
+router.get('/tree', categoryController.getCategories);
 
 /**
  * @route   POST /api/v1/categories

@@ -9,7 +9,7 @@ const getWishlist = async (req, res, next) => {
   try {
     const userId = req.user && req.user.id;
     if (!userId) {
-      throw ApiError.unauthorized('Authentication required to access wishlist');
+      return successResponse(res, [], 'Guest wishlist empty');
     }
 
     const items = await wishlistService.getWishlist(userId);

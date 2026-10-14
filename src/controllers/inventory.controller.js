@@ -52,7 +52,13 @@ const getAuditLogs = async (req, res, next) => {
  */
 const adjustStockLegacy = async (req, res, next) => {
   try {
-    const { sku, delta = 0, reason = 'Legacy stock update' } = req.body || {};
+    const { sku, reason = 'Legacy stock update' } = req.body || {};
+    let delta = 0;
+    if (req.body && req.body.delta !== undefined) {
+      delta = req.body.delta;
+    } else if (req.body && req.body.adjustment !== undefined) {
+      delta = req.body.adjustment;
+    }
     const userId = req.user && req.user.id;
 
     try {

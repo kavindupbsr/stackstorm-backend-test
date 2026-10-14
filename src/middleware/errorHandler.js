@@ -19,14 +19,18 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Structured logging via Winston
-  logger.error(err.message || 'Unhandled Application Error', {
-    statusCode,
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip || req.connection?.remoteAddress,
-    isOperational: err.isOperational || false,
-    stack: err.stack,
-  });
+  if (statusCode >= 500) {
+    logger.error(err.message || 'Unhandled Application Error', {
+      statusCode,
+      method: req.method,
+      url: req.originalUrl,
+      ip: req.ip || req.connection?.remoteAddress,
+      isOperational: err.isOperational || false,
+      stack: err.stack,
+    });
+  } else {
+    logger.warn(`[${statusCode}] ${req.method} ${req.originalUrl} - ${err.message}`);
+  }
 
   return errorResponse(res, message, errors, statusCode);
 };

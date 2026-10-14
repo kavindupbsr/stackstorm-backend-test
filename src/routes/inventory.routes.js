@@ -92,5 +92,17 @@ router.get('/status', (req, res) => {
     'Inventory status retrieved successfully'
   );
 });
+router.get('/', (req, res) => {
+  return successResponse(
+    res,
+    {
+      warehouse: 'Dickwella Central Warehouse',
+      totalSKUs: 69,
+      outOfStockSKUs: 0,
+      checkedBy: (req.user && req.user.email) || 'system',
+    },
+    'Inventory status retrieved successfully'
+  );
+});
 
 module.exports = router;

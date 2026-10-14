@@ -3,6 +3,7 @@ const authController = require('../controllers/auth.controller');
 const authenticate = require('../middleware/authenticate');
 const checkLockout = require('../middleware/checkLockout');
 const { successResponse } = require('../utils/responseFormatter');
+const { authLimiter } = require('../middleware/rateLimiter');
 const {
   validate,
   registerValidationRules,
@@ -17,14 +18,31 @@ const router = express.Router();
  * @desc    Register a new customer account
  * @access  Public
  */
-router.post('/register', validate(registerValidationRules), authController.register);
+router.post(
+  '/register',
+  authLimiter,
+  (req, res, next) => {
+    if (!req.body.fullName && req.body.name) {
+      req.body.fullName = req.body.name;
+    }
+    next();
+  },
+  validate(registerValidationRules),
+  authController.register
+);
 
 /**
  * @route   POST /api/v1/auth/login
  * @desc    Authenticate credentials and issue access + refresh token pair with lockout defense
  * @access  Public
  */
-router.post('/login', checkLockout, validate(loginValidationRules), authController.login);
+router.post(
+  '/login',
+  authLimiter,
+  checkLockout,
+  validate(loginValidationRules),
+  authController.login
+);
 
 /**
  * @route   POST /api/v1/auth/refresh-token
