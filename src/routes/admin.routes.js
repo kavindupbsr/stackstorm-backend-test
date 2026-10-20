@@ -3,7 +3,9 @@ const authenticate = require('../middleware/authenticate');
 const authorize = require('../middleware/authorize');
 const { ROLES } = require('../config/constants');
 const analyticsController = require('../controllers/analytics.controller');
+const returnController = require('../controllers/return.controller');
 const { successResponse } = require('../utils/responseFormatter');
+const { Order, OrderItem, User } = require('../models');
 
 const router = express.Router();
 
@@ -93,24 +95,35 @@ router.get('/users', (req, res) => {
  * @route GET /api/v1/admin/orders
  * @desc Get all customer orders for fulfillment
  */
-router.get('/orders', async (req, res, next) => {
+router.get('/orders', async (req, res) => {
   try {
-    const { Order, OrderItem, User } = require('../models');
     if (Order) {
       const orders = await Order.findAll({
         limit: parseInt(req.query.limit, 10) || 50,
         order: [['created_at', 'DESC']],
         include: [
           { model: OrderItem, as: 'items' },
-          { model: User, as: 'user', attributes: ['id', 'email', 'first_name', 'last_name'] },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'email', 'first_name', 'last_name'],
+          },
         ],
       });
-      return successResponse(res, { orders }, 'Admin orders retrieved successfully');
+      return successResponse(
+        res,
+        { orders },
+        'Admin orders retrieved successfully'
+      );
     }
   } catch {
-    // fallback
+    // fallback to mock empty list if database model is not initialized
   }
-  return successResponse(res, { orders: [] }, 'Admin orders retrieved successfully');
+  return successResponse(
+    res,
+    { orders: [] },
+    'Admin orders retrieved successfully'
+  );
 });
 
 /**
@@ -120,15 +133,26 @@ router.get('/orders', async (req, res, next) => {
 router.put('/orders/:id/status', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status, tracking_number, delivered_at } = req.body || {};
-    const { Order } = require('../models');
+    const {
+      status,
+      tracking_number: trackingNumberSnake,
+      trackingNumber: trackingNumberCamel,
+      delivered_at: deliveredAtSnake,
+      deliveredAt: deliveredAtCamel,
+    } = req.body || {};
+
+    const trackingNumber = trackingNumberSnake || trackingNumberCamel;
+    const deliveredAt = deliveredAtSnake || deliveredAtCamel;
+
     if (Order) {
       const order = await Order.findByPk(id);
       if (order) {
         order.status = status;
-        if (tracking_number) order.tracking_number = tracking_number;
+        if (trackingNumber) {
+          order.tracking_number = trackingNumber;
+        }
         if (status === 'delivered') {
-          order.delivered_at = delivered_at || new Date();
+          order.delivered_at = deliveredAt || new Date();
         }
         await order.save();
         return successResponse(res, order, 'Order status updated successfully');
@@ -136,7 +160,14 @@ router.put('/orders/:id/status', async (req, res, next) => {
     }
     return successResponse(
       res,
-      { id, status, tracking_number, delivered_at: delivered_at || (status === 'delivered' ? new Date().toISOString() : null) },
+      {
+        id,
+        status,
+        tracking_number: trackingNumber,
+        delivered_at:
+          deliveredAt ||
+          (status === 'delivered' ? new Date().toISOString() : null),
+      },
       'Order status updated successfully'
     );
   } catch (err) {
@@ -144,18 +175,34 @@ router.put('/orders/:id/status', async (req, res, next) => {
   }
 });
 
-router.patch('/orders/:id/status', async (req, res, next) => {
+router.patch('/orders/:id/status', async (req, res) => {
   const { id } = req.params;
-  const { status, tracking_number, delivered_at } = req.body || {};
+  const {
+    status,
+    tracking_number: trackingNumberSnake,
+    trackingNumber: trackingNumberCamel,
+    delivered_at: deliveredAtSnake,
+    deliveredAt: deliveredAtCamel,
+  } = req.body || {};
+
+  const trackingNumber = trackingNumberSnake || trackingNumberCamel;
+  const deliveredAt = deliveredAtSnake || deliveredAtCamel;
+
   return successResponse(
     res,
-    { id, status, tracking_number, delivered_at: delivered_at || (status === 'delivered' ? new Date().toISOString() : null) },
+    {
+      id,
+      status,
+      tracking_number: trackingNumber,
+      delivered_at:
+        deliveredAt ||
+        (status === 'delivered' ? new Date().toISOString() : null),
+    },
     'Order status updated successfully'
   );
 });
 
 // Admin Returns management endpoints
-const returnController = require('../controllers/return.controller');
 router.get('/returns', returnController.listAllReturns);
 router.patch('/returns/:id/approve', returnController.approveReturn);
 router.patch('/returns/:id/reject', returnController.rejectReturn);

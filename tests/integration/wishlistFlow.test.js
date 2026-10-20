@@ -41,12 +41,12 @@ describe('Integration: Customer Wishlist API & Stock Alert Triggers (STORM-025)'
   });
 
   describe('Unauthenticated Protection', () => {
-    it('should reject GET /api/v1/wishlist with 401 Unauthorized if token is missing', async () => {
+    it('should allow guest GET /api/v1/wishlist with 200 OK and empty array if token is missing', async () => {
       const res = await request(app).get('/api/v1/wishlist');
 
-      expect(res.status).toBe(401);
-      expect(res.body.success).toBe(false);
-      expect(res.body.message).toMatch(/Authentication token is required/i);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toEqual([]);
     });
 
     it('should reject POST /api/v1/wishlist with 401 Unauthorized if token is missing', async () => {
