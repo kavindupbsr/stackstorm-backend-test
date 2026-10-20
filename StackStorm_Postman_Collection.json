@@ -45,6 +45,41 @@
       "key": "customerAccessToken",
       "value": "",
       "type": "string"
+    },
+    {
+      "key": "sampleCategoryId",
+      "value": "b0000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "sampleCartItemId",
+      "value": "f0000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "sampleAddressId",
+      "value": "a0000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "sampleReservationId",
+      "value": "res_sample_123",
+      "type": "string"
+    },
+    {
+      "key": "sampleReturnId",
+      "value": "ret_sample_123",
+      "type": "string"
+    },
+    {
+      "key": "sampleSku",
+      "value": "BATIK-M-BLU",
+      "type": "string"
+    },
+    {
+      "key": "sampleChatSessionId",
+      "value": "chat_session_sample",
+      "type": "string"
     }
   ],
   "item": [
@@ -398,6 +433,163 @@
               ]
             }
           }
+        },
+        {
+          "name": "Create New Category [Admin]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Resort & Beach Wear\",\n  \"slug\": \"resort-beach-wear\",\n  \"description\": \"Handcrafted coastal apparel\",\n  \"parentId\": null,\n  \"sortOrder\": 5\n}"
+            },
+            "description": "Creates a new department or subcategory in the taxonomy tree."
+          }
+        },
+        {
+          "name": "Update Category Details [Admin]",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{sampleCategoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{sampleCategoryId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Luxury Resort & Beach Wear\",\n  \"description\": \"Updated coastal boutique collection\"\n}"
+            },
+            "description": "Updates category naming or parent hierarchy."
+          }
+        },
+        {
+          "name": "Delete Category [Admin]",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/categories/{{sampleCategoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categories",
+                "{{sampleCategoryId}}"
+              ]
+            },
+            "description": "Deletes category. Fails if products or child categories still depend on it."
+          }
+        },
+        {
+          "name": "Create New Product [Admin]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Handloom Cotton Beach Sarong\",\n  \"slug\": \"handloom-cotton-beach-sarong\",\n  \"basePrice\": 3800,\n  \"description\": \"100% pure organic cotton hand-dyed sarong.\",\n  \"categoryId\": \"{{sampleCategoryId}}\",\n  \"isActive\": true,\n  \"variants\": [\n    {\n      \"sku\": \"SARONG-FREE-BLU\",\n      \"size\": \"FREE\",\n      \"color\": \"#0055A5\",\n      \"stockQuantity\": 25\n    }\n  ]\n}"
+            },
+            "description": "Creates new garment design master along with initial physical SKU variants."
+          }
+        },
+        {
+          "name": "Delete / Archive Product [Admin]",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/products/{{sampleProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "products",
+                "{{sampleProductId}}"
+              ]
+            },
+            "description": "Soft-deletes or archives product design from storefront."
+          }
         }
       ]
     },
@@ -524,6 +716,150 @@
                 "reserve"
               ]
             }
+          }
+        },
+        {
+          "name": "Update Cart Item Quantity",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart/{{sampleCartItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "{{sampleCartItemId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 3\n}"
+            },
+            "description": "Updates the quantity of a specific variant in the customer or guest cart."
+          }
+        },
+        {
+          "name": "Remove Single Item from Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart/{{sampleCartItemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart",
+                "{{sampleCartItemId}}"
+              ]
+            },
+            "description": "Removes a specific garment variant line item from the active cart."
+          }
+        },
+        {
+          "name": "Clear Entire Shopping Cart",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart"
+              ]
+            },
+            "description": "Empties all items from customer cart in one atomic transaction."
+          }
+        },
+        {
+          "name": "Release Stock Reservation Manually",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout/release/{{sampleReservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout",
+                "release",
+                "{{sampleReservationId}}"
+              ]
+            },
+            "description": "Explicitly releases a 15-minute temporary stock hold when customer cancels checkout."
+          }
+        },
+        {
+          "name": "Confirm Stock Reservation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/checkout/confirm/{{sampleReservationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "checkout",
+                "confirm",
+                "{{sampleReservationId}}"
+              ]
+            },
+            "description": "Confirms reservation status during order finalization."
           }
         }
       ]
@@ -669,6 +1005,95 @@
               ]
             }
           }
+        },
+        {
+          "name": "List All Store Orders [Admin/Staff]",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders"
+              ]
+            },
+            "description": "Returns paginated list of all customer orders across the platform for management."
+          }
+        },
+        {
+          "name": "Get Single Order Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{sampleOrderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{sampleOrderId}}"
+              ]
+            },
+            "description": "Retrieves complete order detail including frozen address snapshot and line items."
+          }
+        },
+        {
+          "name": "Finalize Order Post-Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/orders/{{sampleOrderId}}/finalize",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "orders",
+                "{{sampleOrderId}}",
+                "finalize"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentIntentId\": \"pi_test_123456789\"\n}"
+            },
+            "description": "Finalizes order state after successful Stripe payment confirmation."
+          }
         }
       ]
     },
@@ -728,6 +1153,95 @@
                 "toggle"
               ]
             }
+          }
+        },
+        {
+          "name": "Remove Product from Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlist/{{sampleProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist",
+                "{{sampleProductId}}"
+              ]
+            },
+            "description": "Removes a specific garment design from the customer wishlist."
+          }
+        },
+        {
+          "name": "Clear Entire Wishlist",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist"
+              ]
+            },
+            "description": "Clears all saved items from customer wishlist."
+          }
+        },
+        {
+          "name": "Subscribe to Restock Alert Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlist/restock-alert/{{sampleProductId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist",
+                "restock-alert",
+                "{{sampleProductId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"customer@dickwellafashion.lk\"\n}"
+            },
+            "description": "Enrolls customer email into back-in-stock notification webhook."
           }
         }
       ]
@@ -815,6 +1329,134 @@
                 "addresses"
               ]
             }
+          }
+        },
+        {
+          "name": "Update Customer Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "profile"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Kavindu\",\n  \"lastName\": \"Perera\",\n  \"phoneNumber\": \"+94771234567\"\n}"
+            },
+            "description": "Updates customer first name, last name, or telephone contact details."
+          }
+        },
+        {
+          "name": "Update Delivery Address",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/addresses/{{sampleAddressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "addresses",
+                "{{sampleAddressId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"recipientName\": \"Kavindu Perera\",\n  \"addressLine1\": \"45/B Ocean View Terrace\",\n  \"city\": \"Dickwella\",\n  \"district\": \"Matara\",\n  \"postalCode\": \"81200\",\n  \"phoneNumber\": \"+94771234567\"\n}"
+            },
+            "description": "Updates recipient information and street address details."
+          }
+        },
+        {
+          "name": "Set Address as Default Delivery",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/addresses/{{sampleAddressId}}/default",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "addresses",
+                "{{sampleAddressId}}",
+                "default"
+              ]
+            },
+            "description": "Marks this address as the default selection for one-click checkout."
+          }
+        },
+        {
+          "name": "Delete Delivery Address",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/addresses/{{sampleAddressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "addresses",
+                "{{sampleAddressId}}"
+              ]
+            },
+            "description": "Removes address book entry without affecting past order snapshots."
           }
         }
       ]
@@ -960,6 +1602,72 @@
               ]
             }
           }
+        },
+        {
+          "name": "Quick SKU Stock Update [Staff/Admin]",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/variants/{{sampleSku}}/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "variants",
+                "{{sampleSku}}",
+                "stock"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockQuantity\": 40\n}"
+            },
+            "description": "Instantly adjusts physical warehouse stock for a specific barcode SKU."
+          }
+        },
+        {
+          "name": "Variant Inventory Audit Trail [Staff/Admin]",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/variants/{{sampleSku}}/logs",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory",
+                "variants",
+                "{{sampleSku}}",
+                "logs"
+              ]
+            },
+            "description": "Returns historical ledger of adjustments, sales, and reservations for a specific SKU."
+          }
         }
       ]
     },
@@ -1020,6 +1728,33 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Return Request Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/returns/{{sampleReturnId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "returns",
+                "{{sampleReturnId}}"
+              ]
+            },
+            "description": "Retrieves inspection status and courier tracking for a specific return ticket."
+          }
         }
       ]
     },
@@ -1051,6 +1786,41 @@
               ]
             }
           }
+        },
+        {
+          "name": "Redeem Loyalty Points for Discount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/loyalty/redeem",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "loyalty",
+                "redeem"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"points\": 250,\n  \"orderTotal\": 6500\n}"
+            },
+            "description": "Applies customer loyalty points as a cash-equivalent discount at checkout."
+          }
         }
       ]
     },
@@ -1081,6 +1851,62 @@
                 "bot-query"
               ]
             }
+          }
+        },
+        {
+          "name": "Get Live Chat Conversation History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "history"
+              ]
+            },
+            "description": "Fetches persistent message transcripts for the active customer support session."
+          }
+        },
+        {
+          "name": "Close Active Chat Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/chat/sessions/{{sampleChatSessionId}}/close",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "chat",
+                "sessions",
+                "{{sampleChatSessionId}}",
+                "close"
+              ]
+            },
+            "description": "Closes customer support conversation ticket and archives transcript."
           }
         }
       ]
@@ -1199,6 +2025,273 @@
                 "metrics"
               ]
             }
+          }
+        },
+        {
+          "name": "Top Selling Garments Analytics [Admin]",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/top-products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "analytics",
+                "top-products"
+              ]
+            },
+            "description": "Returns highest revenue generating products and SKU velocity."
+          }
+        },
+        {
+          "name": "List All Platform Users [Admin]",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            },
+            "description": "Returns paginated list of registered customers, staff, and admins."
+          }
+        },
+        {
+          "name": "List All Store Orders [Admin]",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders"
+              ]
+            },
+            "description": "Admin management view of all store orders with customer and tracking filters."
+          }
+        },
+        {
+          "name": "Update Order Fulfillment Status [Admin]",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/orders/{{sampleOrderId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "orders",
+                "{{sampleOrderId}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\",\n  \"trackingNumber\": \"PRMPTX-81200-9921\",\n  \"courierName\": \"PromptX Courier Sri Lanka\"\n}"
+            },
+            "description": "Advances order state machine to processing, shipped, or delivered with tracking details."
+          }
+        },
+        {
+          "name": "List All Store Return Requests [Admin]",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/returns",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "returns"
+              ]
+            },
+            "description": "Admin queue of customer 30-day exchange and refund requests."
+          }
+        },
+        {
+          "name": "Approve Customer Return Request [Admin]",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/returns/{{sampleReturnId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "returns",
+                "{{sampleReturnId}}",
+                "approve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"adminNotes\": \"Inspection passed. Item unworn with tags attached.\"\n}"
+            },
+            "description": "Approves return request and triggers refund or exchange fulfillment."
+          }
+        },
+        {
+          "name": "Reject Customer Return Request [Admin]",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/returns/{{sampleReturnId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "admin",
+                "returns",
+                "{{sampleReturnId}}",
+                "reject"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Tags removed and garment worn beyond 30-day limit.\"\n}"
+            },
+            "description": "Rejects return request with explanatory notice."
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Media & Asset Uploads",
+      "item": [
+        {
+          "name": "Upload Garment Image (Multipart) [Admin/Staff]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminAccessToken}}"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "altText",
+                  "value": "Dickwella Handloom Blue Shirt Front View",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/upload/images",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "upload",
+                "images"
+              ]
+            },
+            "description": "Uploads high-resolution garment photography, generates thumbnails, and returns public asset URL."
           }
         }
       ]
